@@ -21,8 +21,14 @@ export function fromMultiline(value: string) {
 }
 
 export function toJobPayload(data: JobDraftInput, recruiterId: string, slug?: string) {
+  const role = data.role_category.trim();
   return {
     ...data,
+    role_category: role === "" ? null : role,
+    hybrid_office_days_per_week:
+      data.remote_type === "hybrid" && data.hybrid_office_days_per_week > 0
+        ? data.hybrid_office_days_per_week
+        : null,
     recruiter_id: recruiterId,
     slug:
       slug ??

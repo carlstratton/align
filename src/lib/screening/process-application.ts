@@ -260,6 +260,69 @@ function normalizeScreeningShape(input: unknown) {
   };
 }
 
+async function extractCandidateContacts(
+  anthropic: Anthropic,
+  model: string,
+  cvText: string,
+): Promise<{ email?: string; name?: string; phone?: string }> {
+  try {
+    // Use only the first ~1000 words — contact details are always near the top
+    const preview = cvText.split(/\s+/).slice(0, 1000).join(" ");
+    const response = await anthropic.messages.create({
+      model,
+      max_tokens: 256,
+      messages: [
+        {
+          role: "user",
+          content: `Extract the candidate's personal contact details from the top of this CV.
+Return only what is explicitly present — do not infer or fabricate values.
+If a field is not present, omit it.
+
+CV text:
+${preview}`,
+        },
+      ],
+      tools: [
+        {
+          name: "submit_contact_details",
+          description: "Submit the candidate's contact details found in the CV.",
+          input_schema: {
+            type: "object" as const,
+            properties: {
+              email: {
+                type: "string",
+                description: "Candidate's personal email address.",
+              },
+              name: {
+                type: "string",
+                description: "Candidate's full name.",
+              },
+              phone: {
+                type: "string",
+                description: "Candidate's phone number.",
+              },
+            },
+          },
+        },
+      ],
+      tool_choice: { type: "tool", name: "submit_contact_details" },
+    });
+
+    const toolUse = response.content.find((block) => block.type === "tool_use");
+    if (!toolUse || toolUse.type !== "tool_use") {
+      return {};
+    }
+    const input = toolUse.input as Record<string, unknown>;
+    return {
+      email: typeof input.email === "string" && input.email.includes("@") ? input.email.trim() : undefined,
+      name: typeof input.name === "string" && input.name.trim().length > 1 ? input.name.trim() : undefined,
+      phone: typeof input.phone === "string" && input.phone.trim().length > 3 ? input.phone.trim() : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 async function attemptRepairScreening({
   anthropic,
   model,
@@ -495,7 +558,7 @@ export async function processApplicationScreening(applicationId: string) {
   const { data: application, error: applicationError } = await supabase
     .from("applications")
     .select(
-      "id, job_id, cv_storage_path, cv_mime_type, status, jobs(screening_threshold, skills, requirements, title)",
+      "id, job_id, candidate_id, cv_storage_path, cv_mime_type, source, status, jobs(screening_threshold, skills, requirements, title)",
     )
     .eq("id", applicationId)
     .single();
@@ -510,6 +573,10 @@ export async function processApplicationScreening(applicationId: string) {
       .update({ status: "error" })
       .eq("id", applicationId);
     throw new Error("CV file metadata missing.");
+  }
+
+  if (application.status === "submitted") {
+    await supabase.from("applications").update({ status: "processing" }).eq("id", applicationId);
   }
 
   const { data: fileData, error: downloadError } = await supabase.storage
@@ -538,6 +605,49 @@ export async function processApplicationScreening(applicationId: string) {
       throw new Error("ANTHROPIC_API_KEY is missing.");
     }
     const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+    // For manually uploaded CVs, attempt to extract real contact details from the text
+    // and patch the placeholder candidate row. Failures here must never block screening.
+    if (application.source === "recruiter_manual" && application.candidate_id) {
+      try {
+        const contacts = await extractCandidateContacts(
+          anthropic,
+          getSelectedModel(activeProfile),
+          cvText,
+        );
+        if (contacts.email || contacts.name || contacts.phone) {
+          const { data: currentCandidate } = await supabase
+            .from("candidates")
+            .select("email, name")
+            .eq("id", application.candidate_id)
+            .single();
+
+          const patch: Record<string, string> = {};
+          if (contacts.email && currentCandidate?.email?.endsWith("@candidates.local")) {
+            patch.email = contacts.email;
+          }
+          if (contacts.name && currentCandidate?.name?.endsWith("@candidates.local") === false) {
+            // Only overwrite if the stored name still looks like the filename-derived placeholder
+            // (i.e. it does NOT contain an @ sign — real names never do)
+            if (!currentCandidate?.name?.includes("@")) {
+              patch.name = contacts.name;
+            }
+          }
+          if (contacts.phone) {
+            patch.phone = contacts.phone;
+          }
+          if (Object.keys(patch).length) {
+            await supabase
+              .from("candidates")
+              .update(patch)
+              .eq("id", application.candidate_id);
+          }
+        }
+      } catch (contactErr) {
+        console.warn("extractCandidateContacts failed (non-fatal):", contactErr);
+      }
+    }
+
     const prompt = buildContextualPrompt({
       cvText,
       jobTitle: jobData?.title ?? "Unknown role",

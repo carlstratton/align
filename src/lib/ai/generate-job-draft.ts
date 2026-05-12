@@ -10,10 +10,18 @@ import {
 
 const generatedJobDraftSchema = z.object({
   title: z.string().min(3),
-  role_category: z.string().min(2),
+  role_category: z.string().refine((s) => s.trim() === "" || s.trim().length >= 2, {
+    message: "If provided, role category must be at least 2 characters",
+  }),
   location_country: z.string().min(2),
   location_city: z.string().min(2),
   remote_type: remoteTypeSchema,
+  hybrid_office_days_per_week: z
+    .preprocess((v) => {
+      if (v === undefined || v === null) return 0;
+      const n = typeof v === "number" ? v : Number(v);
+      return Number.isFinite(n) ? Math.min(5, Math.max(0, Math.floor(n))) : 0;
+    }, z.number().int().min(0).max(5)),
   employment_type: employmentTypeSchema,
   seniority: seniorityLevelSchema,
   salary_min: z.number().int().min(0),
@@ -41,6 +49,7 @@ export type JobGenerationInput = {
   location_country: string;
   location_city: string;
   remote_type: z.infer<typeof remoteTypeSchema>;
+  hybrid_office_days_per_week: number;
   employment_type: z.infer<typeof employmentTypeSchema>;
   seniority: z.infer<typeof seniorityLevelSchema>;
   salary_min: number;
@@ -132,6 +141,7 @@ Writing quality requirements:
 - each bullet should be concrete, human-readable, and at least 8 words
 - avoid repeating the same sentence pattern
 - no generic filler like "etc." or "and more"
+- hybrid_office_days_per_week: integer 0-5; must match the input value for office days when remote_type is hybrid, otherwise use 0
 
 Input:
 ${JSON.stringify(
@@ -148,6 +158,7 @@ ${JSON.stringify(
         location_country: "string",
         location_city: "string",
         remote_type: "remote|hybrid|onsite",
+        hybrid_office_days_per_week: 0,
         employment_type: "full_time|part_time|contract|temporary|internship",
         seniority: "junior|mid|senior|lead|executive",
         salary_min: 0,

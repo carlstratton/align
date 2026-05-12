@@ -1,6 +1,8 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   jobDraftSchema,
@@ -61,6 +63,7 @@ export function JobForm({
       location_country: defaultValues?.location_country ?? "",
       location_city: defaultValues?.location_city ?? "",
       remote_type: defaultValues?.remote_type ?? "remote",
+      hybrid_office_days_per_week: defaultValues?.hybrid_office_days_per_week ?? 0,
       employment_type: defaultValues?.employment_type ?? "full_time",
       seniority: defaultValues?.seniority ?? "mid",
       salary_min: defaultValues?.salary_min ?? 0,
@@ -78,6 +81,14 @@ export function JobForm({
   const {
     formState: { errors },
   } = form;
+
+  const remoteType = useWatch({ control: form.control, name: "remote_type" });
+
+  useEffect(() => {
+    if (remoteType !== "hybrid") {
+      form.setValue("hybrid_office_days_per_week", 0);
+    }
+  }, [remoteType, form]);
 
   function fieldError(name: keyof JobDraftFormInput) {
     const error = errors[name];
@@ -115,8 +126,8 @@ export function JobForm({
           {fieldError("title") ? <p className="mt-1 text-xs text-destructive">{fieldError("title")}</p> : null}
         </label>
         <label className="text-sm">
-          <Label className="mb-1">Role category *</Label>
-          <Input required className="mt-1" {...form.register("role_category")} />
+          <Label className="mb-1">Role category</Label>
+          <Input className="mt-1" {...form.register("role_category")} />
           {fieldError("role_category") ? (
             <p className="mt-1 text-xs text-destructive">{fieldError("role_category")}</p>
           ) : null}
@@ -177,6 +188,29 @@ export function JobForm({
             <p className="mt-1 text-xs text-destructive">{fieldError("remote_type")}</p>
           ) : null}
         </label>
+        <div className="text-sm" hidden={remoteType !== "hybrid"}>
+          <Label className="mb-1" htmlFor="hybrid_office_days_per_week">
+            Office days per week (hybrid)
+          </Label>
+          <select
+            id="hybrid_office_days_per_week"
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2"
+            {...form.register("hybrid_office_days_per_week", { valueAsNumber: true })}
+          >
+            <option value={0}>Open to discussion</option>
+            <option value={1}>1 day per week</option>
+            <option value={2}>2 days per week</option>
+            <option value={3}>3 days per week</option>
+            <option value={4}>4 days per week</option>
+            <option value={5}>5 days per week</option>
+          </select>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Only shown on the public listing if you pick more than zero days.
+          </p>
+          {fieldError("hybrid_office_days_per_week") ? (
+            <p className="mt-1 text-xs text-destructive">{fieldError("hybrid_office_days_per_week")}</p>
+          ) : null}
+        </div>
         <label className="text-sm">
           <Label className="mb-1">Employment *</Label>
           <select

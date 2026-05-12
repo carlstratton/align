@@ -13,10 +13,13 @@ export const seniorityLevelSchema = z.enum(["junior", "mid", "senior", "lead", "
 export const jobDraftSchema = z.object({
   company_id: z.string().uuid("Select a company"),
   title: z.string().min(3, "Title is required"),
-  role_category: z.string().min(2, "Role category is required"),
+  role_category: z.string().refine((s) => s.trim() === "" || s.trim().length >= 2, {
+    message: "If provided, role category must be at least 2 characters",
+  }),
   location_country: z.string().min(2, "Country is required"),
   location_city: z.string().min(2, "City is required"),
   remote_type: remoteTypeSchema,
+  hybrid_office_days_per_week: z.number().int().min(0).max(5),
   employment_type: employmentTypeSchema,
   seniority: seniorityLevelSchema,
   salary_min: z.number().int().min(0, "Minimum salary must be 0 or greater"),

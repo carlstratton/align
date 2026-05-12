@@ -1,25 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
-import Link from "next/link";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthNav } from "@/components/layout/auth-nav";
 import { cn } from "@/lib/utils";
-
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Align Recruit",
-  description: "Privacy-first, AI-assisted recruitment screening.",
+  title: "Align.ai",
+  description:
+    "Align.ai uses contextual AI reasoning to surface the strongest candidates, helping small teams move beyond keyword screening and hire with greater clarity and conviction.",
 };
 
 export default function RootLayout({
@@ -30,20 +29,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      suppressHydrationWarning
+      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans")}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
-              Align Recruit
-            </Link>
-            <nav className="flex items-center gap-5 text-sm text-slate-600">
-              <AuthNav />
-            </nav>
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>
+      <body className={cn(geistSans.className, "min-h-full flex flex-col bg-white text-slate-900")} suppressHydrationWarning>
+        {children}
       </body>
     </html>
   );

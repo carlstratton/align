@@ -12,7 +12,7 @@ import {
 import {
   generateJobDraftAction,
   type GenerateDraftState,
-} from "@/app/dashboard/jobs/generate/actions";
+} from "@/app/(product)/dashboard/jobs/generate/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ const defaultState: GenerateDraftState = {
 
 export function JobPillBuilder({ companies, createAction, error }: JobPillBuilderProps) {
   const [pills, setPills] = useState<PillSelections>(emptyPillSelections());
+  const [remoteType, setRemoteType] = useState("remote");
   const [state, formAction, isPending] = useActionState(generateJobDraftAction, defaultState);
   const [requiredError, setRequiredError] = useState<string | null>(null);
 
@@ -78,8 +79,8 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
                 <Input required name="title" placeholder="Senior Product Manager" />
               </label>
               <label className="text-sm">
-                <Label className="mb-1">Role category *</Label>
-                <Input required name="role_category" placeholder="Product" />
+                <Label className="mb-1">Role category</Label>
+                <Input name="role_category" placeholder="Product (optional)" />
               </label>
               <label className="text-sm">
                 <Label className="mb-1">Country *</Label>
@@ -94,6 +95,8 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
                 <select
                   required
                   name="remote_type"
+                  value={remoteType}
+                  onChange={(e) => setRemoteType(e.target.value)}
                   className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
                 >
                   <option value="remote">Remote</option>
@@ -101,6 +104,27 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
                   <option value="onsite">Onsite</option>
                 </select>
               </label>
+              <div className="text-sm" hidden={remoteType !== "hybrid"}>
+                <Label className="mb-1" htmlFor="pill_hybrid_office_days">
+                  Office days per week (hybrid)
+                </Label>
+                <select
+                  id="pill_hybrid_office_days"
+                  name="hybrid_office_days_per_week"
+                  defaultValue={0}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
+                >
+                  <option value={0}>Open to discussion</option>
+                  <option value={1}>1 day per week</option>
+                  <option value={2}>2 days per week</option>
+                  <option value={3}>3 days per week</option>
+                  <option value={4}>4 days per week</option>
+                  <option value={5}>5 days per week</option>
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Only shown on the public listing if you pick more than zero days.
+                </p>
+              </div>
               <label className="text-sm">
                 <Label className="mb-1">Employment type *</Label>
                 <select

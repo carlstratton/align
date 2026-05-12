@@ -60,6 +60,7 @@ export type Database = {
           location_country: string | null;
           location_city: string | null;
           remote_type: string | null;
+          hybrid_office_days_per_week: number | null;
           employment_type: string | null;
           seniority: string | null;
           salary_min: number | null;
@@ -91,6 +92,7 @@ export type Database = {
           location_country?: string | null;
           location_city?: string | null;
           remote_type?: string | null;
+          hybrid_office_days_per_week?: number | null;
           employment_type?: string | null;
           seniority?: string | null;
           salary_min?: number | null;
@@ -125,6 +127,7 @@ export type Database = {
             | "reject"
             | "error"
             | "withdrawn";
+          source: "candidate_apply" | "recruiter_manual";
           consent_accepted: boolean;
           consent_text_version: string | null;
           consent_accepted_at: string | null;
@@ -146,6 +149,7 @@ export type Database = {
             | "reject"
             | "error"
             | "withdrawn";
+          source?: "candidate_apply" | "recruiter_manual";
           consent_accepted?: boolean;
           consent_text_version?: string | null;
           consent_accepted_at?: string | null;
