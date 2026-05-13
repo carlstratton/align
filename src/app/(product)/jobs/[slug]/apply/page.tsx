@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { submitApplicationAction } from "@/app/(product)/jobs/[slug]/apply/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /** Vercel/serverless: allow CV screening (often 30–90s) before the request is killed. Requires Pro for >60s on many plans. */
 export const maxDuration = 300;
@@ -53,29 +54,30 @@ export default async function ApplyPage({ params, searchParams }: ApplyPageProps
           </p>
         ) : null}
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block text-sm">
-            Full name
-            <Input name="name" required className="mt-1" />
-          </label>
-          <label className="block text-sm">
-            Email
-            <Input name="email" type="email" required className="mt-1" />
-          </label>
+          <div className="space-y-2">
+            <Label htmlFor="apply-name">Full name</Label>
+            <Input id="apply-name" name="name" required className="w-full" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="apply-email">Email</Label>
+            <Input id="apply-email" name="email" type="email" required className="w-full" />
+          </div>
         </div>
-        <label className="block text-sm">
-          Phone (optional)
-          <Input name="phone" className="mt-1" />
-        </label>
-        <label className="block text-sm">
-          Upload CV (PDF or DOCX, max 3MB)
+        <div className="space-y-2">
+          <Label htmlFor="apply-phone">Phone (optional)</Label>
+          <Input id="apply-phone" name="phone" className="w-full" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="apply-cv">Upload CV (PDF or DOCX, max 3MB)</Label>
           <input
+            id="apply-cv"
             name="cv"
             type="file"
             required
             accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            className="w-full rounded-md border border-slate-300 px-3 py-2"
           />
-        </label>
+        </div>
         <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <input name="consent" type="checkbox" required className="mt-0.5" />
           <span>

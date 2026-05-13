@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageCard } from "@/components/layout/page-card";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { TypographyP } from "@/components/ui/typography";
 import { hasPublicEnv } from "@/lib/env";
 
 export default async function DashboardPage() {
@@ -25,9 +26,9 @@ export default async function DashboardPage() {
       description="Track jobs, applications, screening outcomes, and interview invites from here."
       className="max-w-md"
     >
-      <p className="text-sm text-slate-600">
-        Signed in as <span className="font-medium">{user?.email ?? "unknown user"}</span>.
-      </p>
+      <TypographyP className="text-sm [&:not(:first-child)]:mt-0">
+        Signed in as <span className="font-medium text-foreground">{user?.email ?? "unknown user"}</span>.
+      </TypographyP>
       <div className="mt-4">
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">

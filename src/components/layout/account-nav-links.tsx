@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logoutAction } from "@/app/(product)/auth/actions";
+import { cn } from "@/lib/utils";
 
 type AccountNavLinksProps = {
   className?: string;
@@ -8,7 +9,8 @@ type AccountNavLinksProps = {
 };
 
 export function AccountNavLinks({ className, linkClassName, signedIn }: AccountNavLinksProps) {
-  const linkClass = linkClassName ?? "text-sm text-slate-600 hover:text-slate-900";
+  const linkClass =
+    linkClassName ?? cn("text-sm text-muted-foreground transition-colors hover:text-foreground");
 
   if (!signedIn) {
     return (

@@ -3,6 +3,7 @@ import { PageCard } from "@/components/layout/page-card";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TypographyLarge, TypographyMuted } from "@/components/ui/typography";
 import { hasPublicEnv } from "@/lib/env";
 
 type RecruiterJobApplicationCounts = {
@@ -63,10 +64,10 @@ export default async function DashboardApplicationsPage() {
               className="block rounded-md border border-border bg-card p-4 hover:bg-muted/60"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">{job.title}</p>
+                <TypographyLarge className="text-base font-medium">{job.title}</TypographyLarge>
                 <Badge variant={job.status === "published" ? "default" : "outline"}>{job.status}</Badge>
               </div>
-              <div className="mt-2 flex flex-wrap gap-3 text-sm text-slate-700">
+              <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <span>Total: {total}</span>
                 <span>Above threshold: {pass}</span>
                 <span>Needs review: {review}</span>
@@ -77,7 +78,7 @@ export default async function DashboardApplicationsPage() {
         })}
       </div>
       {jobs.length === 0 ? (
-        <p className="text-sm text-slate-600">No job applications yet for your posted jobs.</p>
+        <TypographyMuted className="text-foreground/80">No job applications yet for your posted jobs.</TypographyMuted>
       ) : null}
     </PageCard>
   );

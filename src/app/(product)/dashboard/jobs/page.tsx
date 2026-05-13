@@ -3,6 +3,7 @@ import { PageCard } from "@/components/layout/page-card";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TypographyLarge, TypographyMuted } from "@/components/ui/typography";
 
 export default async function DashboardJobsPage() {
   const supabase = await createClient();
@@ -30,18 +31,16 @@ export default async function DashboardJobsPage() {
             className="block rounded-md border border-border bg-card p-3 hover:bg-muted/70"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="font-medium">{job.title}</p>
+              <TypographyLarge className="text-base font-medium">{job.title}</TypographyLarge>
               <Badge variant={job.status === "published" ? "default" : job.status === "closed" ? "destructive" : "outline"}>
                 {job.status}
               </Badge>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Updated {new Date(job.updated_at).toLocaleString()}
-            </p>
+            <TypographyMuted className="mt-1 text-xs">{`Updated ${new Date(job.updated_at).toLocaleString()}`}</TypographyMuted>
           </Link>
         ))}
         {jobs?.length === 0 ? (
-          <p className="text-sm text-slate-600">No jobs yet. Create your first role.</p>
+          <TypographyMuted className="text-foreground/80">No jobs yet. Create your first role.</TypographyMuted>
         ) : null}
       </div>
     </PageCard>

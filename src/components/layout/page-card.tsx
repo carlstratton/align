@@ -3,10 +3,9 @@ import type { ReactNode } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import { TypographyH1, TypographyMuted } from "@/components/ui/typography";
 
 type PageCardProps = {
   title: string;
@@ -19,8 +18,8 @@ export function PageCard({ title, description, children, className }: PageCardPr
   return (
     <Card className={cn("mx-auto w-full", className)}>
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
+        <TypographyH1>{title}</TypographyH1>
+        {description ? <TypographyMuted className="mt-1.5">{description}</TypographyMuted> : null}
       </CardHeader>
       {children ? <CardContent>{children}</CardContent> : null}
     </Card>

@@ -21,7 +21,7 @@ export default function ProductLayout({ children }: { children: React.ReactNode 
               className="block h-6 w-auto"
             />
           </Link>
-          <nav className="flex items-center gap-5 text-sm text-slate-600">
+          <nav className="flex items-center gap-5 text-sm text-muted-foreground">
             <AuthNav />
           </nav>
         </div>

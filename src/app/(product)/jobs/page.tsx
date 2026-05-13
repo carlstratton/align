@@ -3,6 +3,7 @@ import { PageCard } from "@/components/layout/page-card";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TypographyLarge, TypographyMuted, TypographyP } from "@/components/ui/typography";
 
 type PublicJobListItem = {
   id: string;
@@ -39,30 +40,28 @@ export default async function PublicJobsPage() {
         {jobs.map((job) => (
           <article key={job.id} className="rounded-lg border border-border bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-base font-semibold">{job.title}</h2>
+              <TypographyLarge className="text-base">{job.title}</TypographyLarge>
               <div className="flex flex-wrap gap-1">
                 <Badge variant="outline">{job.remote_type}</Badge>
                 <Badge variant="outline">{job.employment_type}</Badge>
               </div>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <TypographyMuted className="mt-1">
               {job.companies?.name ?? "Company"} • {job.location_city ?? "City"},{" "}
               {job.location_country ?? "Country"}
-            </p>
-            {job.summary ? <p className="mt-2 text-sm text-foreground">{job.summary}</p> : null}
+            </TypographyMuted>
+            {job.summary ? <TypographyP className="!mt-2 text-sm">{job.summary}</TypographyP> : null}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
+              <TypographyMuted className="text-xs">
                 {job.salary_currency ?? "GBP"} {job.salary_min ?? 0} - {job.salary_max ?? 0}
-              </p>
+              </TypographyMuted>
               <Button asChild size="sm">
                 <Link href={`/jobs/${job.slug}`}>View job</Link>
               </Button>
             </div>
           </article>
         ))}
-        {jobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No published jobs are available right now.</p>
-        ) : null}
+        {jobs.length === 0 ? <TypographyMuted>No published jobs are available right now.</TypographyMuted> : null}
       </div>
     </PageCard>
   );

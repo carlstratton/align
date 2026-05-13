@@ -2,6 +2,7 @@ import { PageCard } from "@/components/layout/page-card";
 import { signupAction } from "@/app/(product)/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type SignupPageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -18,22 +19,16 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
             {params.error}
           </p>
         ) : null}
-        <div>
-          <label htmlFor="full_name" className="mb-1 block text-sm font-medium text-slate-700">
-            Full name
-          </label>
+        <div className="space-y-2">
+          <Label htmlFor="full_name">Full name</Label>
           <Input id="full_name" name="full_name" type="text" required className="w-full" />
         </div>
-        <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
-            Email
-          </label>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
           <Input id="email" name="email" type="email" required className="w-full" />
         </div>
-        <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
-            Password
-          </label>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
           <Input
             id="password"
             name="password"

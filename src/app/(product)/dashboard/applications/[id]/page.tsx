@@ -8,6 +8,14 @@ import {
 } from "@/app/(product)/dashboard/applications/actions";
 import { getServerEnv } from "@/lib/env";
 import { Button } from "@/components/ui/button";
+import {
+  TypographyH3,
+  TypographyLarge,
+  TypographyList,
+  TypographyListItem,
+  TypographyMuted,
+  TypographyP,
+} from "@/components/ui/typography";
 
 type ApplicationDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -234,79 +242,81 @@ export default async function ApplicationDetailPage({
       ) : null}
       {bookingUrl ? (
         <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800">
-          <p className="font-medium">Latest booking link ({bookingLink?.status})</p>
-          <p className="mt-1 break-all">{bookingUrl}</p>
+          <TypographyP className="!mt-0 font-medium">Latest booking link ({bookingLink?.status})</TypographyP>
+          <TypographyP className="!mt-1 break-all">{bookingUrl}</TypographyP>
         </div>
       ) : null}
       {booking ? (
         <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800">
-          <p className="font-medium">Latest booking status</p>
-          <p className="mt-1">
+          <TypographyP className="!mt-0 font-medium">Latest booking status</TypographyP>
+          <TypographyP className="!mt-1">
             {booking.status} ({new Date(booking.created_at).toLocaleString()})
-          </p>
-          <p className="mt-1">
+          </TypographyP>
+          <TypographyP className="!mt-1">
             Calendar sync: {booking.calendar_sync_status ?? "not_synced"}
-          </p>
+          </TypographyP>
           {booking.meeting_url ? (
-            <p className="mt-1 break-all">
+            <TypographyP className="!mt-1 break-all">
               Meet link:{" "}
               <a href={booking.meeting_url} className="underline underline-offset-2">
                 {booking.meeting_url}
               </a>
-            </p>
+            </TypographyP>
           ) : null}
           {booking.calendar_html_link ? (
-            <p className="mt-1 break-all">
+            <TypographyP className="!mt-1 break-all">
               Google Calendar event:{" "}
               <a href={booking.calendar_html_link} className="underline underline-offset-2">
                 {booking.calendar_html_link}
               </a>
-            </p>
+            </TypographyP>
           ) : null}
           {booking.calendar_sync_error ? (
-            <p className="mt-1 text-red-700">
+            <TypographyP className="!mt-1 text-red-700">
               Sync error: {booking.calendar_sync_error}
-            </p>
+            </TypographyP>
           ) : null}
         </div>
       ) : null}
 
-      <div className="space-y-2 text-sm text-slate-700">
-        <p>Job: {application.jobs?.title ?? "Unknown role"}</p>
-        <p>Email: {application.candidates?.email}</p>
-        <p>Phone: {application.candidates?.phone ?? "N/A"}</p>
-        <p>Status: {application.status}</p>
-        <p>Applied: {new Date(application.applied_at).toLocaleString()}</p>
-        <p>Scoring profile: {profileName}</p>
-        <p>Profile version: {profileVersion}</p>
+      <div className="space-y-2 text-sm">
+        <TypographyP className="!mt-0">Job: {application.jobs?.title ?? "Unknown role"}</TypographyP>
+        <TypographyP className="!mt-0">Email: {application.candidates?.email}</TypographyP>
+        <TypographyP className="!mt-0">Phone: {application.candidates?.phone ?? "N/A"}</TypographyP>
+        <TypographyP className="!mt-0">Status: {application.status}</TypographyP>
+        <TypographyP className="!mt-0">Applied: {new Date(application.applied_at).toLocaleString()}</TypographyP>
+        <TypographyP className="!mt-0">Scoring profile: {profileName}</TypographyP>
+        <TypographyP className="!mt-0">Profile version: {profileVersion}</TypographyP>
       </div>
 
       <div className="mt-5 grid gap-3 text-sm md:grid-cols-3">
-        <div className="rounded-md border border-slate-200 p-3">
-          <p className="text-xs text-slate-500">AI score</p>
-          <p className="text-xl font-semibold">{screening?.overall_score ?? "N/A"}</p>
+        <div className="space-y-1 rounded-md border border-slate-200 p-3">
+          <TypographyMuted className="text-xs">AI score</TypographyMuted>
+          <TypographyLarge className="text-xl">{screening?.overall_score ?? "N/A"}</TypographyLarge>
         </div>
-        <div className="rounded-md border border-slate-200 p-3">
-          <p className="text-xs text-slate-500">Recommendation</p>
-          <p className="text-xl font-semibold">{screening?.recommendation ?? "N/A"}</p>
+        <div className="space-y-1 rounded-md border border-slate-200 p-3">
+          <TypographyMuted className="text-xs">Recommendation</TypographyMuted>
+          <TypographyLarge className="text-xl">{screening?.recommendation ?? "N/A"}</TypographyLarge>
         </div>
-        <div className="rounded-md border border-slate-200 p-3">
-          <p className="text-xs text-slate-500">Decision band</p>
-          <p className="text-xl font-semibold">{screening?.decision_band ?? "N/A"}</p>
+        <div className="space-y-1 rounded-md border border-slate-200 p-3">
+          <TypographyMuted className="text-xs">Decision band</TypographyMuted>
+          <TypographyLarge className="text-xl">{screening?.decision_band ?? "N/A"}</TypographyLarge>
         </div>
       </div>
-      <div className="mt-3 rounded-md border border-slate-200 p-3 text-sm">
-        <p className="text-xs text-slate-500">AI confidence</p>
-        <p className="text-lg font-semibold">{confidenceScore !== null ? `${confidenceScore}%` : "N/A"}</p>
+      <div className="mt-3 space-y-1 rounded-md border border-slate-200 p-3 text-sm">
+        <TypographyMuted className="text-xs">AI confidence</TypographyMuted>
+        <TypographyLarge className="text-lg">
+          {confidenceScore !== null ? `${confidenceScore}%` : "N/A"}
+        </TypographyLarge>
       </div>
 
       <div className="mt-5 space-y-4 text-sm">
         <section>
-          <h3 className="font-semibold">Summary</h3>
-          <p className="mt-1 text-slate-700">{screening?.summary ?? "No summary available."}</p>
+          <TypographyH3>Summary</TypographyH3>
+          <TypographyP className="!mt-1 text-slate-700">{screening?.summary ?? "No summary available."}</TypographyP>
         </section>
         <section>
-          <h3 className="font-semibold">Contextual rubric breakdown</h3>
+          <TypographyH3>Contextual rubric breakdown</TypographyH3>
           {Object.entries(dimensions).length ? (
             <div className="mt-2 space-y-2">
               {Object.entries(dimensions).map(([key, value]) => (
@@ -329,7 +339,7 @@ export default async function ApplicationDetailPage({
           )}
         </section>
         <section>
-          <h3 className="font-semibold">Weighted scoring math</h3>
+          <TypographyH3>Weighted scoring math</TypographyH3>
           <div className="mt-1 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
             <p>Threshold: {threshold}</p>
             <p className="mt-1">Overall score: {screening?.overall_score ?? "N/A"}</p>
@@ -347,7 +357,7 @@ export default async function ApplicationDetailPage({
           </div>
         </section>
         <section>
-          <h3 className="font-semibold">Strengths</h3>
+          <TypographyH3>Strengths</TypographyH3>
           {strengthItems.length ? (
             <div className="mt-2 space-y-2">
               {strengthItems.map((item, index) => (
@@ -363,7 +373,7 @@ export default async function ApplicationDetailPage({
           )}
         </section>
         <section>
-          <h3 className="font-semibold">Gaps</h3>
+          <TypographyH3>Gaps</TypographyH3>
           {gapItems.length ? (
             <div className="mt-2 space-y-2">
               {gapItems.map((item, index) => (
@@ -379,34 +389,36 @@ export default async function ApplicationDetailPage({
           )}
         </section>
         <section>
-          <h3 className="font-semibold">Missing requirements</h3>
-          <ul className="mt-1 list-disc pl-5 text-slate-700">
+          <TypographyH3>Missing requirements</TypographyH3>
+          <TypographyList className="my-0 ml-0 mt-1 pl-5 text-slate-700">
             {missingRequirements.map((item) => (
-              <li key={item}>{item}</li>
+              <TypographyListItem key={item}>{item}</TypographyListItem>
             ))}
-            {missingRequirements.length === 0 ? <li>None highlighted.</li> : null}
-          </ul>
+            {missingRequirements.length === 0 ? <TypographyListItem>None highlighted.</TypographyListItem> : null}
+          </TypographyList>
         </section>
         <section>
-          <h3 className="font-semibold">Relevant experience</h3>
+          <TypographyH3>Relevant experience</TypographyH3>
           <pre className="mt-1 overflow-x-auto rounded-md bg-slate-50 p-3 text-xs text-slate-700">
             {JSON.stringify(screening?.relevant_experience ?? [], null, 2)}
           </pre>
         </section>
         <section>
-          <h3 className="font-semibold">Risk flags</h3>
+          <TypographyH3>Risk flags</TypographyH3>
           <pre className="mt-1 overflow-x-auto rounded-md bg-slate-50 p-3 text-xs text-slate-700">
             {JSON.stringify(screening?.risk_flags ?? [], null, 2)}
           </pre>
         </section>
         <section>
-          <h3 className="font-semibold">Suggested follow-up questions</h3>
-          <ul className="mt-1 list-disc pl-5 text-slate-700">
+          <TypographyH3>Suggested follow-up questions</TypographyH3>
+          <TypographyList className="my-0 ml-0 mt-1 pl-5 text-slate-700">
             {followUps.map((item) => (
-              <li key={item}>{item}</li>
+              <TypographyListItem key={item}>{item}</TypographyListItem>
             ))}
-            {followUps.length === 0 ? <li>No follow-up questions suggested.</li> : null}
-          </ul>
+            {followUps.length === 0 ? (
+              <TypographyListItem>No follow-up questions suggested.</TypographyListItem>
+            ) : null}
+          </TypographyList>
         </section>
       </div>
 
@@ -473,13 +485,13 @@ export default async function ApplicationDetailPage({
       </p>
 
       <section className="mt-6">
-        <h3 className="text-sm font-semibold text-slate-900">Activity log</h3>
+        <TypographyH3 className="text-sm">Activity log</TypographyH3>
         <div className="mt-3 space-y-2">
           {activityEntries.map((entry) => (
             <div key={entry.id} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
-              <p className="font-medium text-slate-900">{entry.title}</p>
-              <p className="text-xs text-slate-500">{new Date(entry.timestamp).toLocaleString()}</p>
-              <p className="mt-1 text-slate-700">{entry.detail}</p>
+              <TypographyP className="!mt-0 font-medium text-slate-900">{entry.title}</TypographyP>
+              <TypographyMuted className="text-xs">{new Date(entry.timestamp).toLocaleString()}</TypographyMuted>
+              <TypographyP className="!mt-1 text-slate-700">{entry.detail}</TypographyP>
             </div>
           ))}
         </div>

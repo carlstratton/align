@@ -2,6 +2,7 @@ import { PageCard } from "@/components/layout/page-card";
 import { loginAction } from "@/app/(product)/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; next?: string }>;
@@ -19,16 +20,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             {params.error}
           </p>
         ) : null}
-        <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
-            Email
-          </label>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
           <Input id="email" name="email" type="email" required className="w-full" />
         </div>
-        <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
-            Password
-          </label>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
           <Input id="password" name="password" type="password" required className="w-full" />
         </div>
         <Button type="submit" className="w-full">

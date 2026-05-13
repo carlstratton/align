@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { setJobStatusAction } from "@/app/(product)/dashboard/jobs/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TypographyP } from "@/components/ui/typography";
 
 type JobDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -39,11 +40,13 @@ export default async function JobDetailPage({ params, searchParams }: JobDetailP
         </Badge>
         <span>Updated {new Date(job.updated_at).toLocaleString()}</span>
       </div>
-      <p className="text-sm text-slate-700">{job.summary}</p>
-      <div className="mt-3 text-sm text-slate-600">
-        <p>Role category: {job.role_category}</p>
-        <p>Threshold: {job.screening_threshold}</p>
-        <p>Updated: {new Date(job.updated_at).toLocaleString()}</p>
+      <TypographyP className="text-sm text-foreground [&:not(:first-child)]:mt-0">{job.summary}</TypographyP>
+      <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+        <TypographyP className="text-sm [&:not(:first-child)]:mt-0">Role category: {job.role_category}</TypographyP>
+        <TypographyP className="text-sm [&:not(:first-child)]:mt-0">Threshold: {job.screening_threshold}</TypographyP>
+        <TypographyP className="text-sm [&:not(:first-child)]:mt-0">
+          Updated: {new Date(job.updated_at).toLocaleString()}
+        </TypographyP>
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
         <Button asChild>

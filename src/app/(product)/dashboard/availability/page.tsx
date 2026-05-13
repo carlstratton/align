@@ -7,6 +7,8 @@ import {
 } from "@/app/(product)/dashboard/availability/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { TypographyH3, TypographyMuted, TypographyP } from "@/components/ui/typography";
 
 const DAYS = [
   "Sunday",
@@ -61,17 +63,17 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
         </p>
       ) : null}
 
-      <div className="mb-6 rounded-md border border-slate-200 p-4">
-        <h3 className="font-medium">Google Calendar integration</h3>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="mb-6 rounded-md border border-border p-4">
+        <TypographyH3 className="text-sm sm:text-base">Google Calendar integration</TypographyH3>
+        <TypographyMuted className="mt-1">
           Connect Google Calendar to automatically create events with Google Meet links when candidates book.
-        </p>
-        <p className="mt-2 text-sm text-slate-700">
+        </TypographyMuted>
+        <TypographyP className="mt-2 text-sm">
           Status:{" "}
           <span className="font-medium">
             {googleAccount?.google_email ? `Connected as ${googleAccount.google_email}` : "Not connected"}
           </span>
-        </p>
+        </TypographyP>
         <div className="mt-3 flex gap-2">
           {!googleAccount?.google_email ? (
             <Button asChild variant="outline" size="xs">
@@ -89,12 +91,13 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
       </div>
 
       <form action={createAvailabilityWindowAction} className="mb-6 grid gap-3 md:grid-cols-3">
-        <label className="text-sm">
-          Day
+        <div className="space-y-2">
+          <Label htmlFor="availability-day">Day</Label>
           <select
+            id="availability-day"
             name="day_of_week"
             defaultValue="1"
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
           >
             {DAYS.map((day, index) => (
               <option key={day} value={index}>
@@ -102,44 +105,35 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
               </option>
             ))}
           </select>
-        </label>
-        <label className="text-sm">
-          Start time
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="availability-start">Start time</Label>
           <Input
+            id="availability-start"
             name="start_time"
             type="time"
             required
-            className="mt-1"
           />
-        </label>
-        <label className="text-sm">
-          End time
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="availability-end">End time</Label>
+          <Input id="availability-end" name="end_time" type="time" required />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="availability-tz">Timezone</Label>
+          <Input id="availability-tz" name="timezone" defaultValue="UTC" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="availability-duration">Duration (minutes)</Label>
           <Input
-            name="end_time"
-            type="time"
-            required
-            className="mt-1"
-          />
-        </label>
-        <label className="text-sm">
-          Timezone
-          <Input
-            name="timezone"
-            defaultValue="UTC"
-            className="mt-1"
-          />
-        </label>
-        <label className="text-sm">
-          Duration (minutes)
-          <Input
+            id="availability-duration"
             name="interview_duration_minutes"
             type="number"
             defaultValue={30}
             min={15}
             max={120}
-            className="mt-1"
           />
-        </label>
+        </div>
         <div className="flex items-end">
           <Button type="submit">
             Add window
@@ -151,13 +145,13 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
         {(windows ?? []).map((window) => (
           <div
             key={window.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 p-3"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3"
           >
-            <p className="text-sm text-slate-700">
+            <TypographyP className="!mt-0 text-sm">
               {DAYS[window.day_of_week]} • {window.start_time} - {window.end_time} •{" "}
               {window.interview_duration_minutes} min • {window.timezone} •{" "}
               {window.is_active ? "Active" : "Inactive"}
-            </p>
+            </TypographyP>
             <form action={toggleAvailabilityWindowAction}>
               <input type="hidden" name="window_id" value={window.id} />
               <input type="hidden" name="active" value={window.is_active ? "false" : "true"} />
@@ -168,9 +162,7 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
           </div>
         ))}
         {windows?.length === 0 ? (
-          <p className="text-sm text-slate-600">
-            No availability windows set yet. Add one to enable scheduling.
-          </p>
+          <TypographyMuted>No availability windows set yet. Add one to enable scheduling.</TypographyMuted>
         ) : null}
       </div>
     </PageCard>

@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { uploadManualCvsAction } from "@/app/(product)/dashboard/jobs/manual-cv-upload-actions";
 import { Button } from "@/components/ui/button";
+import {
+  TypographyH3,
+  TypographyInlineCode,
+  TypographyMuted,
+  TypographyP,
+} from "@/components/ui/typography";
 
 type QueueItem = {
   id: string;
@@ -119,13 +125,13 @@ export function ManualCvUploadTab({ jobId }: { jobId: string }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <TypographyMuted>
         Upload up to 20 CVs (PDF or DOCX, 3MB each). Each file creates a candidate record and runs the
         same screening pipeline as public applications. Finished candidates appear under the Applicants tab.
         Synthetic emails use the form{" "}
-        <code className="rounded bg-muted px-1 py-0.5 text-xs">manual-…@candidates.local</code>
+        <TypographyInlineCode className="text-xs">manual-…@candidates.local</TypographyInlineCode>
         — update candidate details later if you add that workflow.
-      </p>
+      </TypographyMuted>
 
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -148,15 +154,17 @@ export function ManualCvUploadTab({ jobId }: { jobId: string }) {
         </Button>
       </div>
 
-      {uploading ? <p className="text-sm text-muted-foreground">Uploading…</p> : null}
-      {message ? <p className="text-sm text-amber-900 dark:text-amber-200">{message}</p> : null}
+      {uploading ? <TypographyMuted>Uploading…</TypographyMuted> : null}
+      {message ? (
+        <TypographyP className="!mt-0 text-sm text-amber-900 dark:text-amber-200">{message}</TypographyP>
+      ) : null}
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold">Queue</h3>
+        <TypographyH3 className="mb-2 text-sm">Queue</TypographyH3>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <TypographyMuted>Loading…</TypographyMuted>
         ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No uploads in progress.</p>
+          <TypographyMuted>No uploads in progress.</TypographyMuted>
         ) : (
           <ul className="space-y-2">
             {items.map((item) => (

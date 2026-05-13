@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { PageCard } from "@/components/layout/page-card";
-import { ManualCvUploadTab } from "@/components/dashboard/manual-cv-upload-tab";
+import { JobApplicationsTabs } from "@/components/dashboard/job-applications-tabs";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TypographyH3 } from "@/components/ui/typography";
 
 type JobApplicationsPageProps = {
   params: Promise<{ id: string }>;
@@ -62,8 +64,7 @@ export default async function JobApplicationsPage({
     )
     .eq("job_id", id);
 
-  const { data } =
-    tab === "applicants" ? await request.order("applied_at", { ascending: false }) : { data: [] };
+  const { data } = await request.order("applied_at", { ascending: false });
 
   const applications = ((data ?? []) as unknown as ApplicationListItem[]).sort((a, b) => {
     if (sortBy === "date") {
@@ -137,49 +138,44 @@ export default async function JobApplicationsPage({
 
   return (
     <PageCard title="Applications" description="Review ranked candidates by threshold outcome.">
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <Button asChild size="xs" variant={tab === "applicants" ? "default" : "outline"}>
-          <Link href={applicationsHref({ tab: "applicants" })}>Applicants</Link>
-        </Button>
-        <Button asChild size="xs" variant={tab === "manual" ? "default" : "outline"}>
-          <Link href={applicationsHref({ tab: "manual" })}>Manual upload</Link>
-        </Button>
-      </div>
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading tabs…</p>}>
+        <JobApplicationsTabs
+          jobId={id}
+          defaultTab={tab}
+          applicantsPanel={
+            <>
+              <div className="flex flex-wrap gap-2 text-sm">
+                <Button asChild size="xs" variant="outline">
+                  <Link href={applicationsHref({ tab: "applicants", sort: "score" })}>Sort: score</Link>
+                </Button>
+                <Button asChild size="xs" variant="outline">
+                  <Link href={applicationsHref({ tab: "applicants", sort: "date" })}>Sort: date</Link>
+                </Button>
+              </div>
 
-      {tab === "manual" ? (
-        <ManualCvUploadTab jobId={id} />
-      ) : (
-        <>
-          <div className="mb-4 flex flex-wrap gap-2 text-sm">
-            <Button asChild size="xs" variant="outline">
-              <Link href={applicationsHref({ tab: "applicants", sort: "score" })}>Sort: score</Link>
-            </Button>
-            <Button asChild size="xs" variant="outline">
-              <Link href={applicationsHref({ tab: "applicants", sort: "date" })}>Sort: date</Link>
-            </Button>
-          </div>
-
-          <div className="space-y-6">
-            {sections.map((section) => (
-              <section key={section.title}>
-                <div className="mb-2">
-                  <h3 className="text-sm font-semibold">{section.title}</h3>
-                  <p className="text-xs text-muted-foreground">{section.description}</p>
-                </div>
-                <div className="space-y-3">
-                  {section.items.map((application) => renderApplicationCard(application))}
-                  {section.items.length === 0 ? (
-                    <p className="text-sm text-slate-600">No applications in this bucket.</p>
-                  ) : null}
-                </div>
-              </section>
-            ))}
-            {applications.length === 0 ? (
-              <p className="text-sm text-slate-600">No applications yet for this job.</p>
-            ) : null}
-          </div>
-        </>
-      )}
+              <div className="space-y-6">
+                {sections.map((section) => (
+                  <section key={section.title}>
+                    <div className="mb-2">
+                      <TypographyH3 className="text-sm">{section.title}</TypographyH3>
+                      <p className="text-xs text-muted-foreground">{section.description}</p>
+                    </div>
+                    <div className="space-y-3">
+                      {section.items.map((application) => renderApplicationCard(application))}
+                      {section.items.length === 0 ? (
+                        <p className="text-sm text-slate-600">No applications in this bucket.</p>
+                      ) : null}
+                    </div>
+                  </section>
+                ))}
+                {applications.length === 0 ? (
+                  <p className="text-sm text-slate-600">No applications yet for this job.</p>
+                ) : null}
+              </div>
+            </>
+          }
+        />
+      </Suspense>
       <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-100">
         AI screening is assistive only. Recruiters remain responsible for final decisions.
       </p>

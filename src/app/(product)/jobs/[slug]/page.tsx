@@ -2,9 +2,18 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PageCard } from "@/components/layout/page-card";
+import {
+  TypographyH1,
+  TypographyH2,
+  TypographyH4,
+  TypographyList,
+  TypographyListItem,
+  TypographyMuted,
+  TypographyP,
+} from "@/components/ui/typography";
 
 type PublicJobPageProps = {
   params: Promise<{ slug: string }>;
@@ -65,13 +74,13 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
       <header className="mb-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight text-black">{job.title}</h1>
-            <p className="text-base text-slate-600">
+            <TypographyH1>{job.title}</TypographyH1>
+            <TypographyP className="!mt-0 text-base text-muted-foreground">
               {companyName}
               {job.location_city || job.location_country
                 ? ` · ${[job.location_city, job.location_country].filter(Boolean).join(", ")}`
                 : null}
-            </p>
+            </TypographyP>
             <div className="mt-1 flex flex-wrap gap-2">
               {job.employment_type ? (
                 <Badge variant="secondary">{job.employment_type}</Badge>
@@ -84,7 +93,7 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
               ) : null}
             </div>
             {salaryLabel ? (
-              <p className="text-sm font-medium text-slate-700">{salaryLabel}</p>
+              <TypographyP className="!mt-0 text-sm font-medium">{salaryLabel}</TypographyP>
             ) : null}
           </div>
           <div className="shrink-0">{applyButton}</div>
@@ -99,42 +108,42 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
         {/* Left — role content */}
         <main className="flex flex-col gap-8">
           {job.summary ? (
-            <p className="text-base leading-relaxed text-slate-700">{job.summary}</p>
+            <TypographyP className="text-base leading-relaxed">{job.summary}</TypographyP>
           ) : null}
           {hybridOfficeSentence ? (
-            <p className="text-base leading-relaxed text-slate-700">{hybridOfficeSentence}</p>
+            <TypographyP className="text-base leading-relaxed">{hybridOfficeSentence}</TypographyP>
           ) : null}
 
           {job.responsibilities?.length ? (
             <section>
-              <h2 className="mb-3 text-lg font-semibold text-black">Responsibilities</h2>
-              <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+              <TypographyH2 className="mb-3 border-0 pb-0 text-lg sm:text-xl">Responsibilities</TypographyH2>
+              <TypographyList className="my-0 ml-0 space-y-2 pl-5 text-sm leading-relaxed">
                 {job.responsibilities.map((item: string) => (
-                  <li key={item}>{item}</li>
+                  <TypographyListItem key={item}>{item}</TypographyListItem>
                 ))}
-              </ul>
+              </TypographyList>
             </section>
           ) : null}
 
           {job.requirements?.length ? (
             <section>
-              <h2 className="mb-3 text-lg font-semibold text-black">Requirements</h2>
-              <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+              <TypographyH2 className="mb-3 border-0 pb-0 text-lg sm:text-xl">Requirements</TypographyH2>
+              <TypographyList className="my-0 ml-0 space-y-2 pl-5 text-sm leading-relaxed">
                 {job.requirements.map((item: string) => (
-                  <li key={item}>{item}</li>
+                  <TypographyListItem key={item}>{item}</TypographyListItem>
                 ))}
-              </ul>
+              </TypographyList>
             </section>
           ) : null}
 
           {job.nice_to_haves?.length ? (
             <section>
-              <h2 className="mb-3 text-lg font-semibold text-black">Nice to have</h2>
-              <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+              <TypographyH2 className="mb-3 border-0 pb-0 text-lg sm:text-xl">Nice to have</TypographyH2>
+              <TypographyList className="my-0 ml-0 space-y-2 pl-5 text-sm leading-relaxed">
                 {job.nice_to_haves.map((item: string) => (
-                  <li key={item}>{item}</li>
+                  <TypographyListItem key={item}>{item}</TypographyListItem>
                 ))}
-              </ul>
+              </TypographyList>
             </section>
           ) : null}
         </main>
@@ -144,31 +153,31 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
           {/* Role meta card */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-slate-900">Role details</CardTitle>
+              <TypographyH4>Role details</TypographyH4>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm text-slate-700">
+            <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
               {job.role_category ? (
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Category</span>
-                  <span className="text-right font-medium">{job.role_category}</span>
+                  <span>Category</span>
+                  <span className="text-right font-medium text-foreground">{job.role_category}</span>
                 </div>
               ) : null}
               {job.seniority ? (
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Seniority</span>
-                  <span className="text-right font-medium">{job.seniority}</span>
+                  <span>Seniority</span>
+                  <span className="text-right font-medium text-foreground">{job.seniority}</span>
                 </div>
               ) : null}
               {job.employment_type ? (
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Contract</span>
-                  <span className="text-right font-medium">{job.employment_type}</span>
+                  <span>Contract</span>
+                  <span className="text-right font-medium text-foreground">{job.employment_type}</span>
                 </div>
               ) : null}
               {job.remote_type ? (
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Remote</span>
-                  <span className="text-right font-medium">
+                  <span>Remote</span>
+                  <span className="text-right font-medium text-foreground">
                     {job.remote_type === "hybrid" &&
                     typeof job.hybrid_office_days_per_week === "number" &&
                     job.hybrid_office_days_per_week > 0
@@ -179,8 +188,8 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
               ) : null}
               {salaryLabel ? (
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Salary</span>
-                  <span className="text-right font-medium">{salaryLabel}</span>
+                  <span>Salary</span>
+                  <span className="text-right font-medium text-foreground">{salaryLabel}</span>
                 </div>
               ) : null}
             </CardContent>
@@ -190,7 +199,7 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
           {job.skills?.length ? (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">Skills</CardTitle>
+                <TypographyH4>Skills</TypographyH4>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
@@ -211,23 +220,23 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
           {job.benefits?.length ? (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">Benefits</CardTitle>
+                <TypographyH4>Benefits</TypographyH4>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc space-y-1.5 pl-4 text-sm text-slate-700">
+                <TypographyList className="my-0 ml-0 space-y-1.5 pl-4 text-sm">
                   {job.benefits.map((item: string) => (
-                    <li key={item}>{item}</li>
+                    <TypographyListItem key={item}>{item}</TypographyListItem>
                   ))}
-                </ul>
+                </TypographyList>
               </CardContent>
             </Card>
           ) : null}
 
           {/* AI screening notice */}
-          <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <TypographyMuted className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
             This application uses AI-assisted screening. A human recruiter remains responsible for
             hiring decisions.
-          </p>
+          </TypographyMuted>
         </aside>
       </div>
     </div>

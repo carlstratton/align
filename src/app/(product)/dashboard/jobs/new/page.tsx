@@ -2,6 +2,8 @@ import { PageCard } from "@/components/layout/page-card";
 import { createClient } from "@/lib/supabase/server";
 import { createCompanyAction, createJobAction } from "@/app/(product)/dashboard/jobs/actions";
 import { JobPillBuilder } from "@/components/jobs/job-pill-builder";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type NewJobPageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -33,14 +35,10 @@ export default async function NewJobPage({ searchParams }: NewJobPageProps) {
               {params.error}
             </p>
           ) : null}
-          <label className="block text-sm">
-            Company name
-            <input
-              name="name"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-              required
-            />
-          </label>
+          <div className="space-y-2">
+            <Label htmlFor="company-name">Company name</Label>
+            <Input id="company-name" name="name" required className="w-full" />
+          </div>
           <button
             type="submit"
             className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
