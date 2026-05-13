@@ -18,7 +18,7 @@ export default async function NewJobPage({ searchParams }: NewJobPageProps) {
 
   const { data: companies } = await supabase
     .from("companies")
-    .select("id, name")
+    .select("id, name, logo_storage_path")
     .eq("owner_id", user?.id ?? "");
 
   const companyOptions = companies ?? [];

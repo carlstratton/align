@@ -1,5 +1,6 @@
 import { PageCard } from "@/components/layout/page-card";
-import { createClient } from "@/lib/supabase/server";
+import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
+import { getPublishedJobApplyGateBySlug } from "@/lib/jobs/published-queries";
 import { submitApplicationAction } from "@/app/(product)/jobs/[slug]/apply/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,31 +17,52 @@ type ApplyPageProps = {
 export default async function ApplyPage({ params, searchParams }: ApplyPageProps) {
   const { slug } = await params;
   const query = await searchParams;
-  const supabase = await createClient();
-  const { data: job } = await supabase
-    .from("jobs")
-    .select("id, title, status, application_method")
-    .eq("slug", slug)
-    .single();
+  const { job } = await getPublishedJobApplyGateBySlug(slug);
 
   if (!job || job.status !== "published") {
-    return <PageCard title="Job unavailable" description="This job is not currently open for applications." />;
+    return (
+      <div className="w-full">
+        <ProductBreadcrumbs
+          items={[{ label: "Home", href: "/" }, { label: "Open Roles", href: "/jobs" }, { label: "Unavailable" }]}
+        />
+        <PageCard title="Job unavailable" description="This job is not currently open for applications." />
+      </div>
+    );
   }
 
   if (job.application_method !== "internal") {
     return (
-      <PageCard
-        title={`Apply: ${job.title}`}
-        description="This role uses an external application flow managed by the employer."
-      />
+      <div className="w-full">
+        <ProductBreadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Open Roles", href: "/jobs" },
+            { label: job.title, href: `/jobs/${slug}` },
+            { label: "Apply" },
+          ]}
+        />
+        <PageCard
+          title={`Apply: ${job.title}`}
+          description="This role uses an external application flow managed by the employer."
+        />
+      </div>
     );
   }
 
   return (
-    <PageCard
-      title={`Apply: ${job.title}`}
-      description="Submit your details and CV to apply for this role."
-    >
+    <div className="w-full">
+      <ProductBreadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Open Roles", href: "/jobs" },
+          { label: job.title, href: `/jobs/${slug}` },
+          { label: "Apply" },
+        ]}
+      />
+      <PageCard
+        title={`Apply: ${job.title}`}
+        description="Submit your details and CV to apply for this role."
+      >
       <form action={submitApplicationAction} className="max-w-2xl space-y-4">
         <input type="hidden" name="slug" value={slug} />
         {query.error ? (
@@ -91,5 +113,6 @@ export default async function ApplyPage({ params, searchParams }: ApplyPageProps
         </Button>
       </form>
     </PageCard>
+    </div>
   );
 }

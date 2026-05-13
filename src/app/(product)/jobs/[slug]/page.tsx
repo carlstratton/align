@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getPublishedJobDetailBySlug } from "@/lib/jobs/published-queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PageCard } from "@/components/layout/page-card";
+import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
+import { getPublicEnv } from "@/lib/env";
+import { getCompanyLogoPublicUrl } from "@/lib/company-logo";
 import {
   TypographyH1,
   TypographyH2,
@@ -21,23 +24,33 @@ type PublicJobPageProps = {
 
 export default async function PublicJobPage({ params }: PublicJobPageProps) {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: job } = await supabase
-    .from("jobs")
-    .select(
-      "id, title, summary, role_category, location_country, location_city, remote_type, hybrid_office_days_per_week, employment_type, seniority, salary_min, salary_max, salary_currency, responsibilities, requirements, nice_to_haves, benefits, skills, status, application_method, external_apply_url, companies(name)",
-    )
-    .eq("slug", slug)
-    .single();
+  const { job } = await getPublishedJobDetailBySlug(slug);
 
   if (!job || job.status !== "published") {
-    return <PageCard title="Job not found" description="This role is no longer available." />;
+    return (
+      <div className="mx-auto w-full max-w-5xl px-6 py-10">
+        <ProductBreadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Open Roles", href: "/jobs" },
+            { label: "Job not found" },
+          ]}
+        />
+        <PageCard title="Job not found" description="This role is no longer available." />
+      </div>
+    );
   }
 
-  const companyName =
-    job.companies && typeof job.companies === "object" && "name" in job.companies
-      ? String(job.companies.name)
-      : "Company";
+  const { NEXT_PUBLIC_SUPABASE_URL } = getPublicEnv();
+  const companyRecord =
+    job.companies && typeof job.companies === "object"
+      ? (job.companies as { name?: string; logo_storage_path?: string | null })
+      : null;
+  const companyName = companyRecord?.name ? String(companyRecord.name) : "Company";
+  const logoUrl = getCompanyLogoPublicUrl(
+    NEXT_PUBLIC_SUPABASE_URL,
+    companyRecord?.logo_storage_path ?? null,
+  );
 
   const salaryLabel =
     job.salary_min && job.salary_max
@@ -70,10 +83,30 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10">
+      <ProductBreadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Open Roles", href: "/jobs" },
+          { label: job.title },
+        ]}
+      />
       {/* Full-width header */}
       <header className="mb-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt=""
+                width={90}
+                height={90}
+                className="size-[90px] shrink-0 rounded-lg border border-border object-cover"
+              />
+            ) : (
+              <div className="size-[90px] shrink-0 rounded-lg bg-muted" aria-hidden />
+            )}
+            <div className="flex min-w-0 flex-col gap-2">
             <TypographyH1>{job.title}</TypographyH1>
             <TypographyP className="!mt-0 text-base text-muted-foreground">
               {companyName}
@@ -95,6 +128,7 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
             {salaryLabel ? (
               <TypographyP className="!mt-0 text-sm font-medium">{salaryLabel}</TypographyP>
             ) : null}
+            </div>
           </div>
           <div className="shrink-0">{applyButton}</div>
         </div>

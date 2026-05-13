@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,14 +10,16 @@ import {
   type JobDraftInput,
 } from "@/lib/validation/job";
 import { toMultiline } from "@/lib/jobs";
+import { getCompanyLogoPublicUrl } from "@/lib/company-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-type CompanyOption = {
+export type CompanyOption = {
   id: string;
   name: string;
+  logo_storage_path?: string | null;
 };
 
 type JobFormProps = {
@@ -54,6 +56,9 @@ export function JobForm({
   secondarySubmitLabel,
   error,
 }: JobFormProps) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const [hasStagedLogo, setHasStagedLogo] = useState(false);
+
   const form = useForm<JobDraftFormInput>({
     resolver: zodResolver(jobDraftSchema),
     defaultValues: {
@@ -83,6 +88,15 @@ export function JobForm({
   } = form;
 
   const remoteType = useWatch({ control: form.control, name: "remote_type" });
+  const companyId = useWatch({ control: form.control, name: "company_id" });
+
+  const selectedCompany = companies.find((c) => c.id === companyId);
+  const logoPublicUrl = getCompanyLogoPublicUrl(supabaseUrl, selectedCompany?.logo_storage_path ?? null);
+  const canPublish = Boolean(selectedCompany?.logo_storage_path) || hasStagedLogo;
+
+  useEffect(() => {
+    setHasStagedLogo(false);
+  }, [companyId]);
 
   useEffect(() => {
     if (remoteType !== "hybrid") {
@@ -98,7 +112,7 @@ export function JobForm({
   }
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} encType="multipart/form-data" className="space-y-4">
       {defaultValues?.id ? <input type="hidden" name="job_id" value={defaultValues.id} /> : null}
       {error ? <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       <p className="text-xs text-muted-foreground">Fields marked with * are mandatory.</p>
@@ -120,6 +134,34 @@ export function JobForm({
             <p className="mt-1 text-xs text-destructive">{fieldError("company_id")}</p>
           ) : null}
         </label>
+        <div className="text-sm md:col-span-2">
+          <Label className="mb-1" htmlFor="company_logo">
+            Company logo{secondarySubmitLabel ? " (required to publish)" : ""}
+          </Label>
+          {logoPublicUrl ? (
+            <div className="mt-2 mb-2 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoPublicUrl}
+                alt=""
+                className="size-16 shrink-0 rounded-md border border-border object-cover"
+              />
+              <span className="text-xs text-muted-foreground">Current logo on file</span>
+            </div>
+          ) : null}
+          <Input
+            key={companyId}
+            id="company_logo"
+            name="company_logo"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="mt-1 max-w-md cursor-pointer"
+            onChange={(e) => setHasStagedLogo(Boolean(e.target.files?.length))}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            PNG, JPEG, or WebP. Max 2MB. Shown on public job listings.
+          </p>
+        </div>
         <label className="text-sm">
           <Label className="mb-1">Title *</Label>
           <Input required className="mt-1" {...form.register("title")} />
@@ -355,6 +397,12 @@ export function JobForm({
             variant="secondary"
             className="gap-1"
             size="default"
+            disabled={!canPublish}
+            title={
+              canPublish
+                ? undefined
+                : "Upload a company logo or use a company that already has one."
+            }
           >
             {secondarySubmitLabel}
           </Button>

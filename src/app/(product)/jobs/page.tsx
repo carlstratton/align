@@ -1,68 +1,145 @@
 import Link from "next/link";
-import { PageCard } from "@/components/layout/page-card";
-import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TypographyLarge, TypographyMuted, TypographyP } from "@/components/ui/typography";
+import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
+import { getCompanyLogoPublicUrl } from "@/lib/company-logo";
+import { formatJobPostedLabel, formatSalaryRangeLabel } from "@/lib/format-job-listing";
+import { getPublicEnv } from "@/lib/env";
+import { getPublishedJobsForBoard } from "@/lib/jobs/published-queries";
 
 type PublicJobListItem = {
   id: string;
   slug: string;
   title: string;
-  summary: string | null;
-  role_category: string | null;
   location_city: string | null;
   location_country: string | null;
   remote_type: string;
-  employment_type: string;
+  hybrid_office_days_per_week: number | null;
+  employment_type: string | null;
   salary_min: number | null;
   salary_max: number | null;
   salary_currency: string | null;
   created_at: string;
-  companies: { name: string } | null;
+  published_at: string | null;
+  companies: { name: string; logo_storage_path: string | null } | null;
 };
 
-export default async function PublicJobsPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("jobs")
-    .select(
-      "id, slug, title, summary, role_category, location_city, location_country, remote_type, employment_type, salary_min, salary_max, salary_currency, created_at, companies(name)",
-    )
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
+function workArrangementLabel(job: PublicJobListItem): string {
+  if (job.remote_type === "remote") return "Remote";
+  if (job.remote_type === "onsite") return "In office";
+  if (job.remote_type === "hybrid") {
+    const d = job.hybrid_office_days_per_week;
+    if (typeof d === "number" && d > 0) {
+      return `Hybrid · ${d} ${d === 1 ? "day" : "days"} in office`;
+    }
+    return "Hybrid";
+  }
+  return job.remote_type ?? "—";
+}
 
-  const jobs = (data ?? []) as unknown as PublicJobListItem[];
+function employmentLabel(employmentType: string | null | undefined): string {
+  if (!employmentType) return "—";
+  return employmentType
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+export default async function PublicJobsPage() {
+  const { NEXT_PUBLIC_SUPABASE_URL } = getPublicEnv();
+  const { jobs: rawJobs, error } = await getPublishedJobsForBoard();
+  const jobs = rawJobs as unknown as PublicJobListItem[];
 
   return (
-    <PageCard title="Open roles" description="Browse currently published opportunities.">
-      <div className="space-y-3">
-        {jobs.map((job) => (
-          <article key={job.id} className="rounded-lg border border-border bg-card p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <TypographyLarge className="text-base">{job.title}</TypographyLarge>
-              <div className="flex flex-wrap gap-1">
-                <Badge variant="outline">{job.remote_type}</Badge>
-                <Badge variant="outline">{job.employment_type}</Badge>
-              </div>
-            </div>
-            <TypographyMuted className="mt-1">
-              {job.companies?.name ?? "Company"} • {job.location_city ?? "City"},{" "}
-              {job.location_country ?? "Country"}
-            </TypographyMuted>
-            {job.summary ? <TypographyP className="!mt-2 text-sm">{job.summary}</TypographyP> : null}
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <TypographyMuted className="text-xs">
-                {job.salary_currency ?? "GBP"} {job.salary_min ?? 0} - {job.salary_max ?? 0}
-              </TypographyMuted>
-              <Button asChild size="sm">
-                <Link href={`/jobs/${job.slug}`}>View job</Link>
-              </Button>
-            </div>
-          </article>
-        ))}
-        {jobs.length === 0 ? <TypographyMuted>No published jobs are available right now.</TypographyMuted> : null}
+    <div className="w-full">
+      <ProductBreadcrumbs items={[{ label: "Home", href: "/" }, { label: "Open Roles" }]} />
+
+      <h1 className="mt-20 lg:mt-10 text-[26px] font-medium leading-none tracking-tight text-black lg:text-[40px]">Open Roles</h1>
+
+      {process.env.NODE_ENV === "development" && error ? (
+        <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+          <strong>Open roles query failed (dev):</strong> {error.message}. If the list is empty, run
+          SQL migration <code className="rounded bg-amber-100 px-1">20260514140000_public_job_board_rls.sql</code>{" "}
+          in Supabase, or set <code className="rounded bg-amber-100 px-1">SUPABASE_SERVICE_ROLE_KEY</code> in{" "}
+          <code className="rounded bg-amber-100 px-1">.env.local</code> for local development.
+        </p>
+      ) : null}
+
+      <div className="mt-10">
+        {jobs.length === 0 ? (
+          <p className="text-[18px] font-medium leading-[23px] text-muted-foreground">
+            No published jobs are available right now.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border border-b border-border">
+            {jobs.map((job) => {
+              const companyName = job.companies?.name ?? "Company";
+              const city = job.location_city ?? "City";
+              const country = job.location_country ?? "Country";
+              const postedAt = job.published_at ?? job.created_at;
+              const postedLabel = formatJobPostedLabel(postedAt);
+              const salaryLabel = [
+                formatSalaryRangeLabel(job.salary_currency, job.salary_min, job.salary_max),
+                postedLabel,
+              ]
+                .filter(Boolean)
+                .join(" • ");
+
+              const logoUrl = getCompanyLogoPublicUrl(
+                NEXT_PUBLIC_SUPABASE_URL,
+                job.companies?.logo_storage_path ?? null,
+              );
+
+              const badgeClass =
+                "h-auto rounded-md border border-black px-2 py-0.5 text-[12px] font-medium leading-4 text-black";
+
+              return (
+                <li key={job.id} className="flex flex-wrap items-center gap-6 py-8 lg:flex-nowrap lg:gap-8">
+                  <div className="order-1 shrink-0">
+                    {logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logoUrl}
+                        alt=""
+                        width={90}
+                        height={90}
+                        className="size-[90px] rounded-lg border border-border object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="size-[90px] rounded-lg bg-muted"
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+
+                  <div className="order-3 min-w-0 flex-1 lg:order-2">
+                    <h2 className="text-[26px] font-medium leading-none text-black">{job.title}</h2>
+                    <p className="mt-2 text-[18px] font-medium leading-[23px] text-muted-foreground">
+                      {companyName} • {city}, {country}
+                      {salaryLabel ? ` • ${salaryLabel}` : ""}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="outline" className={badgeClass}>
+                        {workArrangementLabel(job)}
+                      </Badge>
+                      <Badge variant="outline" className={badgeClass}>
+                        {employmentLabel(job.employment_type)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="order-4 w-full shrink-0 lg:order-3 lg:w-auto lg:justify-self-end">
+                    <Button asChild size="lg" className="w-full rounded-md bg-black px-8 text-white hover:bg-black/90 lg:w-auto">
+                      <Link href={`/jobs/${job.slug}`}>View</Link>
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
-    </PageCard>
+    </div>
   );
 }

@@ -5,10 +5,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { jobDraftSchema } from "@/lib/validation/job";
 import { fromMultiline, toJobPayload } from "@/lib/jobs";
+import { uploadCompanyLogoAndUpdateRow } from "@/lib/company-logo";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function getFormFile(formData: FormData, key: string): File | null {
+  const value = formData.get(key);
+  return value instanceof File && value.size > 0 ? value : null;
 }
 
 function getNumber(formData: FormData, key: string, fallback = 0) {
@@ -128,7 +134,45 @@ export async function createJobAction(formData: FormData) {
     redirect(`/dashboard/jobs/new?error=${encodeURIComponent(message)}`);
   }
 
-  const status = getString(formData, "intent") === "publish" ? "published" : "draft";
+  const intent = getString(formData, "intent");
+  const status = intent === "publish" ? "published" : "draft";
+
+  const { data: companyRow, error: companyFetchError } = await supabase
+    .from("companies")
+    .select("logo_storage_path, owner_id")
+    .eq("id", parsed.data.company_id)
+    .maybeSingle();
+
+  if (companyFetchError || !companyRow || companyRow.owner_id !== user.id) {
+    redirect(`/dashboard/jobs/new?error=${encodeURIComponent("Invalid company selection.")}`);
+  }
+
+  const logoFile = getFormFile(formData, "company_logo");
+  let logoPath = companyRow.logo_storage_path;
+
+  if (logoFile) {
+    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(supabase, {
+      companyId: parsed.data.company_id,
+      file: logoFile,
+      previousPath: companyRow.logo_storage_path,
+    });
+    if (logoErr) {
+      redirect(`/dashboard/jobs/new?error=${encodeURIComponent(logoErr)}`);
+    }
+    const { data: refreshed } = await supabase
+      .from("companies")
+      .select("logo_storage_path")
+      .eq("id", parsed.data.company_id)
+      .single();
+    logoPath = refreshed?.logo_storage_path ?? null;
+  }
+
+  if (status === "published" && !logoPath) {
+    redirect(
+      `/dashboard/jobs/new?error=${encodeURIComponent("Add a company logo (PNG, JPEG, or WebP) before publishing.")}`,
+    );
+  }
+
   const payload = toJobPayload(parsed.data, user.id);
   const { data, error } = await supabase
     .from("jobs")
@@ -145,35 +189,77 @@ export async function createJobAction(formData: FormData) {
   }
 
   revalidatePath("/dashboard/jobs");
+  revalidatePath("/jobs");
   redirect(`/dashboard/jobs/${data.id}`);
 }
 
 export async function updateJobAction(formData: FormData) {
   const jobId = getString(formData, "job_id");
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
   const parsed = jobDraftSchema.safeParse(buildJobFormData(formData));
   if (!parsed.success) {
     const message = formatValidationError(parsed.error);
     redirect(`/dashboard/jobs/${jobId}/edit?error=${encodeURIComponent(message)}`);
   }
 
-    const { error } = await supabase
-      .from("jobs")
-      .update({
-        ...parsed.data,
-        role_category: parsed.data.role_category.trim() === "" ? null : parsed.data.role_category.trim(),
-        hybrid_office_days_per_week:
-          parsed.data.remote_type === "hybrid" && parsed.data.hybrid_office_days_per_week > 0
-            ? parsed.data.hybrid_office_days_per_week
-            : null,
-      })
-      .eq("id", jobId);
+  const { data: jobRow, error: jobFetchError } = await supabase
+    .from("jobs")
+    .select("recruiter_id")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (jobFetchError || !jobRow || jobRow.recruiter_id !== user.id) {
+    redirect(`/dashboard/jobs/${jobId}/edit?error=${encodeURIComponent("You cannot edit this job.")}`);
+  }
+
+  const { data: companyRow, error: companyFetchError } = await supabase
+    .from("companies")
+    .select("logo_storage_path, owner_id")
+    .eq("id", parsed.data.company_id)
+    .maybeSingle();
+
+  if (companyFetchError || !companyRow || companyRow.owner_id !== user.id) {
+    redirect(`/dashboard/jobs/${jobId}/edit?error=${encodeURIComponent("Invalid company selection.")}`);
+  }
+
+  const logoFile = getFormFile(formData, "company_logo");
+  if (logoFile) {
+    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(supabase, {
+      companyId: parsed.data.company_id,
+      file: logoFile,
+      previousPath: companyRow.logo_storage_path,
+    });
+    if (logoErr) {
+      redirect(`/dashboard/jobs/${jobId}/edit?error=${encodeURIComponent(logoErr)}`);
+    }
+  }
+
+  const { error } = await supabase
+    .from("jobs")
+    .update({
+      ...parsed.data,
+      role_category: parsed.data.role_category.trim() === "" ? null : parsed.data.role_category.trim(),
+      hybrid_office_days_per_week:
+        parsed.data.remote_type === "hybrid" && parsed.data.hybrid_office_days_per_week > 0
+          ? parsed.data.hybrid_office_days_per_week
+          : null,
+    })
+    .eq("id", jobId);
   if (error) {
     redirect(`/dashboard/jobs/${jobId}/edit?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath("/dashboard/jobs");
   revalidatePath(`/dashboard/jobs/${jobId}`);
+  revalidatePath("/jobs");
   redirect(`/dashboard/jobs/${jobId}`);
 }
 
@@ -181,6 +267,22 @@ export async function setJobStatusAction(formData: FormData) {
   const jobId = getString(formData, "job_id");
   const status = getString(formData, "status");
   const supabase = await createClient();
+
+  if (status === "published") {
+    const { data: jobRow } = await supabase.from("jobs").select("company_id").eq("id", jobId).maybeSingle();
+    if (jobRow?.company_id) {
+      const { data: companyRow } = await supabase
+        .from("companies")
+        .select("logo_storage_path")
+        .eq("id", jobRow.company_id)
+        .maybeSingle();
+      if (!companyRow?.logo_storage_path) {
+        redirect(
+          `/dashboard/jobs/${jobId}?error=${encodeURIComponent("Add a company logo on the edit job page before publishing.")}`,
+        );
+      }
+    }
+  }
 
   const updates: Record<string, string | null> = { status };
   if (status === "published") {
@@ -198,5 +300,6 @@ export async function setJobStatusAction(formData: FormData) {
 
   revalidatePath("/dashboard/jobs");
   revalidatePath(`/dashboard/jobs/${jobId}`);
+  revalidatePath("/jobs");
   redirect(`/dashboard/jobs/${jobId}`);
 }

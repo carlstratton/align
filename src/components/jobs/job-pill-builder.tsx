@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useActionState } from "react";
-import { JobForm } from "@/components/jobs/job-form";
+import { JobForm, type CompanyOption } from "@/components/jobs/job-form";
 import { JobPillSelector } from "@/components/jobs/job-pill-selector";
 import {
   emptyPillSelections,
@@ -17,11 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-type CompanyOption = {
-  id: string;
-  name: string;
-};
 
 type JobPillBuilderProps = {
   companies: CompanyOption[];

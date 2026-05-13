@@ -34,12 +34,14 @@ export type Database = {
           owner_id: string;
           name: string;
           slug: string | null;
+          logo_storage_path: string | null;
         };
         Insert: {
           id?: string;
           owner_id: string;
           name: string;
           slug?: string | null;
+          logo_storage_path?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["companies"]["Insert"]>;
       };
