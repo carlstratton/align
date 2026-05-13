@@ -65,9 +65,16 @@ export function MobileNav({ signedIn, className }: MobileNavProps) {
           ref={panelRef}
           className="absolute right-0 top-12 z-20 min-w-48 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg"
         >
+          <Link
+            href="/jobs"
+            className="text-base text-slate-900"
+            onClick={() => setOpen(false)}
+          >
+            Explore Jobs
+          </Link>
           <AccountNavLinks
             signedIn={signedIn}
-            className="flex flex-col gap-3"
+            className="mt-3 flex flex-col gap-3"
             linkClassName="text-base text-slate-900"
           />
           {!signedIn ? (

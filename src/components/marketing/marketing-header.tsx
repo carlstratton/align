@@ -5,6 +5,9 @@ import { MobileNav } from "@/components/marketing/mobile-nav";
 import { hasPublicEnv } from "@/lib/env";
 import { getOptionalAuthUser } from "@/lib/supabase/auth";
 
+const desktopNavLinkClass =
+  "inline-flex items-center text-base leading-none text-black hover:text-slate-700";
+
 export async function MarketingHeader() {
   const signedIn = hasPublicEnv() ? Boolean(await getOptionalAuthUser()) : false;
 
@@ -26,11 +29,14 @@ export async function MarketingHeader() {
           />
         </Link>
 
-        <div className="hidden min-h-8 items-center lg:flex">
+        <div className="hidden min-h-8 items-center gap-8 lg:flex">
+          <Link href="/jobs" className={desktopNavLinkClass}>
+            Explore Jobs
+          </Link>
           <AccountNavLinks
             signedIn={signedIn}
             className="flex items-center gap-8"
-            linkClassName="inline-flex items-center text-base leading-none text-black hover:text-slate-700"
+            linkClassName={desktopNavLinkClass}
           />
         </div>
 
