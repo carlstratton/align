@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { runManualCvBatchUpload } from "@/lib/applications/manual-cv-batch";
 
 type RouteContext = {
   params: Promise<{ jobId: string }>;
@@ -61,4 +62,44 @@ export async function GET(_request: Request, context: RouteContext) {
   });
 
   return NextResponse.json({ items });
+}
+
+export async function POST(request: Request, context: RouteContext) {
+  const { jobId } = await context.params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "Invalid multipart form data" }, { status: 400 });
+  }
+
+  const result = await runManualCvBatchUpload({
+    supabase,
+    jobId,
+    userId: user.id,
+    formData,
+  });
+
+  if (!result.ok) {
+    const statusMap: Record<string, number> = {
+      unauthorized: 401,
+      forbidden: 403,
+      bad_request: 400,
+      service_unavailable: 503,
+    };
+    const status = statusMap[result.error.kind] ?? 500;
+    return NextResponse.json(result, { status });
+  }
+
+  return NextResponse.json(result);
 }

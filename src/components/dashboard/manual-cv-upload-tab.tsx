@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { uploadManualCvsAction } from "@/app/(product)/dashboard/jobs/manual-cv-upload-actions";
 import { Button } from "@/components/ui/button";
 import {
   TypographyH3,
@@ -89,43 +88,49 @@ export function ManualCvUploadTab({ jobId }: { jobId: string }) {
       fd.append("files", f);
     }
     try {
-      const result = await uploadManualCvsAction(jobId, fd);
-      if (!result.ok) {
-        const err = result.error;
-        if (err.kind === "unauthorized") {
+      const res = await fetch(`/api/dashboard/jobs/${jobId}/manual-cvs`, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
+      const payload = await res.json() as {
+        ok?: boolean;
+        error?: { kind: string; message?: string };
+        errors?: { filename: string; message: string }[];
+        details?: { filename: string; message: string }[];
+      };
+
+      if (!res.ok || payload.ok === false) {
+        const kind = payload.error?.kind ?? "";
+        if (res.status === 401 || kind === "unauthorized") {
           setMessage("You need to sign in again to upload CVs.");
-        } else if (err.kind === "forbidden") {
+        } else if (res.status === 403 || kind === "forbidden") {
           setMessage("You do not have access to upload CVs for this job.");
-        } else if (err.kind === "service_unavailable") {
+        } else if (res.status === 503 || kind === "service_unavailable") {
           setMessage(
-            "Uploads are temporarily unavailable (server could not use admin access). On Vercel, set SUPABASE_SERVICE_ROLE_KEY for this project and redeploy, or check Supabase logs.",
+            "Uploads are temporarily unavailable (server could not use admin access). Check that SUPABASE_SERVICE_ROLE_KEY is set on Vercel and redeploy.",
           );
-        } else if (err.kind === "bad_request") {
+        } else if (res.status === 400 || kind === "bad_request") {
           const detailMsg =
-            Array.isArray(result.details) && result.details.length
-              ? result.details.map((d) => `${d.filename}: ${d.message}`).join("; ")
-              : null;
-          setMessage(detailMsg ?? err.message);
+            Array.isArray(payload.details) && payload.details.length
+              ? payload.details.map((d) => `${d.filename}: ${d.message}`).join("; ")
+              : payload.error?.message ?? null;
+          setMessage(detailMsg ?? "Upload request was invalid.");
+        } else {
+          setMessage("Upload failed. Check your connection and try again.");
         }
         return;
       }
-      if (result.errors.length) {
+
+      if (Array.isArray(payload.errors) && payload.errors.length) {
         setMessage(
-          `Some files failed: ${result.errors.map((e) => `${e.filename}: ${e.message}`).join("; ")}`,
+          `Some files failed: ${payload.errors.map((e) => `${e.filename}: ${e.message}`).join("; ")}`,
         );
       }
       void loadQueue({ silent: true });
     } catch (err) {
       console.error("ManualCvUploadTab upload failed:", err);
-      const hint =
-        err instanceof Error && err.message && !err.message.includes("NEXT_REDIRECT")
-          ? err.message
-          : null;
-      setMessage(
-        hint
-          ? `Upload failed: ${hint}`
-          : "Upload failed. Check your connection and try again.",
-      );
+      setMessage("Upload failed. Check your connection and try again.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
