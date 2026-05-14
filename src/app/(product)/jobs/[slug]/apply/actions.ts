@@ -63,8 +63,14 @@ export async function submitApplicationAction(formData: FormData) {
   }
 
   if (job.screening_enabled) {
-    const { processApplicationScreening } = await import("@/lib/screening/process-application");
-    await processApplicationScreening(applicationId);
+    try {
+      const { processApplicationScreening } = await import("@/lib/screening/process-application");
+      await processApplicationScreening(applicationId);
+    } catch (err) {
+      // Screening failure must not block the applicant's success page —
+      // the application row is already saved. Log for Vercel function logs.
+      console.error("submitApplicationAction screening failed:", applicationId, err);
+    }
   }
 
   redirect(`/jobs/${slug}/apply?success=1`);
