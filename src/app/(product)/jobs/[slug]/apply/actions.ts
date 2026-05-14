@@ -2,11 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getServerEnv } from "@/lib/env";
 import {
   createApplicationWithUploadedCv,
   validateCvFile,
 } from "@/lib/applications/create-with-cv";
-import { processApplicationScreening } from "@/lib/screening/process-application";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -64,7 +64,13 @@ export async function submitApplicationAction(formData: FormData) {
   }
 
   if (job.screening_enabled) {
-    await processApplicationScreening(applicationId);
+    const { APP_BASE_URL } = getServerEnv();
+    void fetch(`${APP_BASE_URL}/api/applications/${applicationId}/screen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }).catch((err) => {
+      console.error(`submitApplicationAction screening fetch failed for ${applicationId}:`, err);
+    });
   }
 
   redirect(`/jobs/${slug}/apply?success=1`);

@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-/** Vercel/serverless: allow CV screening (often 30–90s) before the request is killed. Requires Pro for >60s on many plans. */
-export const maxDuration = 300;
-
 type ApplyPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string; success?: string }>;
