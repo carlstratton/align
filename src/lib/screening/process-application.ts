@@ -1,7 +1,5 @@
-import mammoth from "mammoth";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { PDFParse } from "pdf-parse";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getServerEnv } from "@/lib/env";
 import { getActiveScoringProfile, type ScoringProfile } from "@/lib/screening/scoring-profiles";
@@ -13,6 +11,8 @@ function toStringArray(value: unknown): string[] {
 async function extractCvText(fileBuffer: ArrayBuffer, mimeType: string) {
   const buffer = Buffer.from(fileBuffer);
   if (mimeType === "application/pdf") {
+    // Dynamic import prevents pdf-parse from running DOMMatrix at module evaluation time
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: buffer });
     const parsed = await parser.getText();
     await parser.destroy();
@@ -20,6 +20,7 @@ async function extractCvText(fileBuffer: ArrayBuffer, mimeType: string) {
   }
 
   if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    const mammoth = await import("mammoth");
     const parsed = await mammoth.extractRawText({ buffer });
     return parsed.value ?? "";
   }
