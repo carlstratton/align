@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { runManualCvBatchUpload } from "@/lib/applications/manual-cv-batch";
-import { getServerEnv } from "@/lib/env";
 
 export const maxDuration = 300;
+// Prevent Next.js from statically caching the queue GET response.
+export const dynamic = "force-dynamic";
 
 type RouteContext = {
   params: Promise<{ jobId: string }>;
