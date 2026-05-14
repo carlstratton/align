@@ -6,9 +6,27 @@ import {
   displayNameFromCvFilename,
   validateCvFile,
 } from "@/lib/applications/create-with-cv";
-import { processApplicationScreening } from "@/lib/screening/process-application";
 
 const MAX_FILES = 20;
+
+/** Server actions sometimes deliver Blobs; normalize so validation and storage get a File. */
+function filesFromFormData(formData: FormData): File[] {
+  const raw = formData.getAll("files");
+  const out: File[] = [];
+  for (const entry of raw) {
+    if (entry instanceof File) {
+      out.push(entry);
+      continue;
+    }
+    const maybeBlob = entry as unknown;
+    if (typeof Blob !== "undefined" && maybeBlob instanceof Blob) {
+      const type = maybeBlob.type || "application/octet-stream";
+      const fallbackName = type.includes("pdf") ? "upload.pdf" : "upload.docx";
+      out.push(new File([maybeBlob], fallbackName, { type }));
+    }
+  }
+  return out;
+}
 
 export type ManualCvBatchError =
   | { kind: "unauthorized" }
@@ -68,8 +86,7 @@ export async function runManualCvBatchUpload(params: {
     return { ok: false, error: { kind: "service_unavailable" } };
   }
 
-  const rawFiles = formData.getAll("files");
-  const files = rawFiles.filter((entry): entry is File => entry instanceof File);
+  const files = filesFromFormData(formData);
 
   if (files.length === 0) {
     return {
@@ -124,15 +141,20 @@ export async function runManualCvBatchUpload(params: {
 
   if (job.screening_enabled && applicationIds.length) {
     const ids = [...applicationIds];
-    after(async () => {
-      for (const id of ids) {
-        try {
-          await processApplicationScreening(id);
-        } catch (err) {
-          console.error("Manual CV screening failed:", id, err);
+    try {
+      after(async () => {
+        const { processApplicationScreening } = await import("@/lib/screening/process-application");
+        for (const id of ids) {
+          try {
+            await processApplicationScreening(id);
+          } catch (err) {
+            console.error("Manual CV screening failed:", id, err);
+          }
         }
-      }
-    });
+      });
+    } catch (afterErr) {
+      console.error("manual-cv-batch: after() registration failed", afterErr);
+    }
   }
 
   return { ok: true, applicationIds, errors };

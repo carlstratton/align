@@ -97,7 +97,9 @@ export function ManualCvUploadTab({ jobId }: { jobId: string }) {
         } else if (err.kind === "forbidden") {
           setMessage("You do not have access to upload CVs for this job.");
         } else if (err.kind === "service_unavailable") {
-          setMessage("Uploads are temporarily unavailable. Please try again later.");
+          setMessage(
+            "Uploads are temporarily unavailable (server could not use admin access). On Vercel, set SUPABASE_SERVICE_ROLE_KEY for this project and redeploy, or check Supabase logs.",
+          );
         } else if (err.kind === "bad_request") {
           const detailMsg =
             Array.isArray(result.details) && result.details.length
@@ -113,8 +115,17 @@ export function ManualCvUploadTab({ jobId }: { jobId: string }) {
         );
       }
       void loadQueue({ silent: true });
-    } catch {
-      setMessage("Upload failed. Check your connection and try again.");
+    } catch (err) {
+      console.error("ManualCvUploadTab upload failed:", err);
+      const hint =
+        err instanceof Error && err.message && !err.message.includes("NEXT_REDIRECT")
+          ? err.message
+          : null;
+      setMessage(
+        hint
+          ? `Upload failed: ${hint}`
+          : "Upload failed. Check your connection and try again.",
+      );
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
