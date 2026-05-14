@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getServerEnv } from "@/lib/env";
 import {
   createApplicationWithUploadedCv,
   validateCvFile,
@@ -64,12 +65,13 @@ export async function submitApplicationAction(formData: FormData) {
 
   if (job.screening_enabled) {
     try {
-      const { processApplicationScreening } = await import("@/lib/screening/process-application");
-      await processApplicationScreening(applicationId);
+      const { APP_BASE_URL } = getServerEnv();
+      await fetch(`${APP_BASE_URL}/api/applications/${applicationId}/screen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
     } catch (err) {
-      // Screening failure must not block the applicant's success page —
-      // the application row is already saved. Log for Vercel function logs.
-      console.error("submitApplicationAction screening failed:", applicationId, err);
+      console.error("submitApplicationAction screening dispatch failed:", applicationId, err);
     }
   }
 

@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getServerEnv } from "@/lib/env";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createApplicationWithUploadedCv,
@@ -193,17 +194,20 @@ export async function runManualCvBatchUpload(params: {
 
   if (job.screening_enabled && applicationIds.length) {
     const ids = [...applicationIds];
+    const { APP_BASE_URL } = getServerEnv();
     after(async () => {
-      const { processApplicationScreening } = await import("@/lib/screening/process-application");
       for (const id of ids) {
         try {
-          await processApplicationScreening(id);
+          await fetch(`${APP_BASE_URL}/api/applications/${id}/screen`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
         } catch (err) {
-          console.error("Manual CV screening failed:", id, err);
+          console.error("Manual CV screening dispatch failed:", id, err);
           await moveManualUploadsToReview(admin, {
             jobId: job.id,
             applicationIds: [id],
-            message: err instanceof Error ? err.message : "Screening failed.",
+            message: err instanceof Error ? err.message : "Screening dispatch failed.",
           });
         }
       }
