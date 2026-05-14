@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getServerEnv } from "@/lib/env";
+import { getInternalBaseUrl } from "@/lib/env";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createApplicationWithUploadedCv,
@@ -194,11 +194,11 @@ export async function runManualCvBatchUpload(params: {
 
   if (job.screening_enabled && applicationIds.length) {
     const ids = [...applicationIds];
-    const { APP_BASE_URL } = getServerEnv();
     after(async () => {
+      const baseUrl = getInternalBaseUrl();
       for (const id of ids) {
         try {
-          await fetch(`${APP_BASE_URL}/api/applications/${id}/screen`, {
+          await fetch(`${baseUrl}/api/applications/${id}/screen`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
           });

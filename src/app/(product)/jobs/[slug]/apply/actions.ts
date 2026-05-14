@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getServerEnv } from "@/lib/env";
+import { getInternalBaseUrl } from "@/lib/env";
 import {
   createApplicationWithUploadedCv,
   validateCvFile,
@@ -65,8 +65,7 @@ export async function submitApplicationAction(formData: FormData) {
 
   if (job.screening_enabled) {
     try {
-      const { APP_BASE_URL } = getServerEnv();
-      await fetch(`${APP_BASE_URL}/api/applications/${applicationId}/screen`, {
+      await fetch(`${getInternalBaseUrl()}/api/applications/${applicationId}/screen`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });

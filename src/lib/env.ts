@@ -44,3 +44,19 @@ export function getServerEnv() {
     APP_BASE_URL: process.env.APP_BASE_URL ?? "http://localhost:3000",
   });
 }
+
+/**
+ * Returns the base URL for internal server-to-server fetches.
+ * Prefers APP_BASE_URL (explicit, includes protocol), then falls back to
+ * VERCEL_URL (set automatically by Vercel on every deployment, no protocol prefix),
+ * then localhost for local dev.
+ */
+export function getInternalBaseUrl(): string {
+  if (process.env.APP_BASE_URL && !process.env.APP_BASE_URL.includes("localhost")) {
+    return process.env.APP_BASE_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return process.env.APP_BASE_URL ?? "http://localhost:3000";
+}
