@@ -1,5 +1,5 @@
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getServerEnv } from "@/lib/env";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createApplicationWithUploadedCv,
@@ -192,21 +192,22 @@ export async function runManualCvBatchUpload(params: {
   }
 
   if (job.screening_enabled && applicationIds.length) {
-    const { APP_BASE_URL } = getServerEnv();
-    for (const id of applicationIds) {
-      try {
-        // Fire-and-forget: each screening call runs in its own Vercel function (maxDuration=300).
-        // We don't await the result here so the upload response returns quickly.
-        void fetch(`${APP_BASE_URL}/api/applications/${id}/screen`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        }).catch((err) => {
-          console.error(`Manual CV screening fetch failed for ${id}:`, err);
-        });
-      } catch (err) {
-        console.error(`Manual CV screening dispatch failed for ${id}:`, err);
+    const ids = [...applicationIds];
+    after(async () => {
+      const { processApplicationScreening } = await import("@/lib/screening/process-application");
+      for (const id of ids) {
+        try {
+          await processApplicationScreening(id);
+        } catch (err) {
+          console.error("Manual CV screening failed:", id, err);
+          await moveManualUploadsToReview(admin, {
+            jobId: job.id,
+            applicationIds: [id],
+            message: err instanceof Error ? err.message : "Screening failed.",
+          });
+        }
       }
-    }
+    });
   }
 
   return { ok: true, applicationIds, errors };

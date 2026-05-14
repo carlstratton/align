@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { runManualCvBatchUpload } from "@/lib/applications/manual-cv-batch";
 import { getServerEnv } from "@/lib/env";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type RouteContext = {
   params: Promise<{ jobId: string }>;

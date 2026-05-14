@@ -1,3 +1,6 @@
+/** Allow CV screening (30–90s typical) to complete before Vercel kills the function. */
+export const maxDuration = 300;
+
 import { PageCard } from "@/components/layout/page-card";
 import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
 import { getPublishedJobApplyGateBySlug } from "@/lib/jobs/published-queries";
