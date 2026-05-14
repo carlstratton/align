@@ -28,6 +28,50 @@ function filesFromFormData(formData: FormData): File[] {
   return out;
 }
 
+async function moveManualUploadsToReview(
+  supabase: SupabaseClient,
+  params: { jobId: string; applicationIds: string[]; message: string },
+) {
+  const { jobId, applicationIds, message } = params;
+  if (!applicationIds.length) return;
+
+  const reviewedAt = Date.now();
+  await supabase
+    .from("applications")
+    .update({ status: "review" })
+    .in("id", applicationIds);
+
+  await supabase.from("screening_results").upsert(
+    applicationIds.map((applicationId) => ({
+      application_id: applicationId,
+      job_id: jobId,
+      overall_score: 0,
+      recommendation: "not_recommended" as const,
+      decision_band: "review" as const,
+      confidence_score: null,
+      summary: "Screening could not start automatically and requires recruiter review.",
+      score_breakdown: { method: "contextual-v1", failure: true, failed_at: reviewedAt },
+      strengths: [],
+      gaps: [],
+      missing_requirements: [],
+      relevant_experience: [],
+      risk_flags: ["Automated screening did not start; manual review required."],
+      suggested_follow_up_questions: [
+        "Can you walk through your most relevant experience for this role?",
+        "Which outcomes in your recent roles are you most proud of?",
+      ],
+      human_review_note:
+        "This is an AI-assisted workflow fallback. Recruiter review is required before decisions.",
+      model_provider: "anthropic",
+      model_name: "unknown",
+      prompt_version: "unknown",
+      processing_time_ms: null,
+      error_message: message,
+    })),
+    { onConflict: "application_id" },
+  );
+}
+
 export type ManualCvBatchError =
   | { kind: "unauthorized" }
   | { kind: "forbidden" }
@@ -139,16 +183,43 @@ export async function runManualCvBatchUpload(params: {
     }
   }
 
+  if (!job.screening_enabled && applicationIds.length) {
+    await moveManualUploadsToReview(admin, {
+      jobId: job.id,
+      applicationIds,
+      message: "Screening is disabled for this job; manual review required.",
+    });
+  }
+
   if (job.screening_enabled && applicationIds.length) {
     const ids = [...applicationIds];
     try {
       after(async () => {
-        const { processApplicationScreening } = await import("@/lib/screening/process-application");
+        let processApplicationScreening: (applicationId: string) => Promise<unknown>;
+        try {
+          ({ processApplicationScreening } = await import("@/lib/screening/process-application"));
+        } catch (importErr) {
+          const message =
+            importErr instanceof Error ? importErr.message : "Screening module could not load.";
+          console.error("Manual CV screening startup failed:", importErr);
+          await moveManualUploadsToReview(admin, {
+            jobId: job.id,
+            applicationIds: ids,
+            message,
+          });
+          return;
+        }
+
         for (const id of ids) {
           try {
             await processApplicationScreening(id);
           } catch (err) {
             console.error("Manual CV screening failed:", id, err);
+            await moveManualUploadsToReview(admin, {
+              jobId: job.id,
+              applicationIds: [id],
+              message: err instanceof Error ? err.message : "Screening failed before it could start.",
+            });
           }
         }
       });
