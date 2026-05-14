@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { jobDraftSchema } from "@/lib/validation/job";
 import { fromMultiline, toJobPayload } from "@/lib/jobs";
 import { uploadCompanyLogoAndUpdateRow } from "@/lib/company-logo";
@@ -151,7 +152,7 @@ export async function createJobAction(formData: FormData) {
   let logoPath = companyRow.logo_storage_path;
 
   if (logoFile) {
-    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(supabase, {
+    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(createAdminClient(), {
       companyId: parsed.data.company_id,
       file: logoFile,
       previousPath: companyRow.logo_storage_path,
@@ -232,7 +233,7 @@ export async function updateJobAction(formData: FormData) {
 
   const logoFile = getFormFile(formData, "company_logo");
   if (logoFile) {
-    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(supabase, {
+    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(createAdminClient(), {
       companyId: parsed.data.company_id,
       file: logoFile,
       previousPath: companyRow.logo_storage_path,
