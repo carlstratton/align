@@ -8,21 +8,17 @@ function toStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)) : [];
 }
 
-async function extractCvText(fileBuffer: ArrayBuffer, mimeType: string) {
-  const buffer = Buffer.from(fileBuffer);
+type CvContent = { kind: "pdf"; base64: string } | { kind: "text"; text: string };
+
+async function prepareCvContent(fileBuffer: ArrayBuffer, mimeType: string): Promise<CvContent> {
   if (mimeType === "application/pdf") {
-    // Dynamic import prevents pdf-parse from running DOMMatrix at module evaluation time
-    const { PDFParse } = await import("pdf-parse");
-    const parser = new PDFParse({ data: buffer });
-    const parsed = await parser.getText();
-    await parser.destroy();
-    return parsed.text ?? "";
+    return { kind: "pdf", base64: Buffer.from(fileBuffer).toString("base64") };
   }
 
   if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
     const mammoth = await import("mammoth");
-    const parsed = await mammoth.extractRawText({ buffer });
-    return parsed.value ?? "";
+    const parsed = await mammoth.extractRawText({ buffer: Buffer.from(fileBuffer) });
+    return { kind: "text", text: parsed.value ?? "" };
   }
 
   if (mimeType === "application/msword") {
@@ -112,7 +108,7 @@ function buildContextualPrompt({
   requirements,
   profile,
 }: {
-  cvText: string;
+  cvText?: string;
   jobTitle: string;
   threshold: number;
   skills: string[];
@@ -125,6 +121,10 @@ function buildContextualPrompt({
     description: dimension.description,
     weight: profile.config.weights[dimension.key],
   }));
+  const cvSection =
+    cvText !== undefined
+      ? `\n\nCV text:\n${cvText.slice(0, 14000)}`
+      : "\n\nThe candidate's CV has been provided as a PDF document above. Read it directly.";
   return `You are screening a candidate CV for a recruiter.
 Return strict JSON only (no markdown, no prose outside JSON).
 The recruiter wants contextual evaluation, not keyword matching.
@@ -179,10 +179,7 @@ ${JSON.stringify(
     },
     null,
     2,
-  )}
-
-CV text:
-${cvText.slice(0, 14000)}`;
+  )}${cvSection}`;
 }
 
 function extractJson(raw: string) {
@@ -264,25 +261,34 @@ function normalizeScreeningShape(input: unknown) {
 async function extractCandidateContacts(
   anthropic: Anthropic,
   model: string,
-  cvText: string,
+  cvContent: CvContent,
 ): Promise<{ email?: string; name?: string; phone?: string }> {
   try {
-    // Use only the first ~1000 words — contact details are always near the top
-    const preview = cvText.split(/\s+/).slice(0, 1000).join(" ");
+    const instruction =
+      "Extract the candidate's personal contact details from this CV.\n" +
+      "Return only what is explicitly present — do not infer or fabricate values.\n" +
+      "If a field is not present, omit it.";
+
+    const messageContent: Anthropic.Messages.ContentBlockParam[] =
+      cvContent.kind === "pdf"
+        ? [
+            {
+              type: "document",
+              source: { type: "base64", media_type: "application/pdf", data: cvContent.base64 },
+            },
+            { type: "text", text: instruction },
+          ]
+        : [
+            {
+              type: "text",
+              text: `${instruction}\n\nCV text:\n${cvContent.text.split(/\s+/).slice(0, 1000).join(" ")}`,
+            },
+          ];
+
     const response = await anthropic.messages.create({
       model,
       max_tokens: 256,
-      messages: [
-        {
-          role: "user",
-          content: `Extract the candidate's personal contact details from the top of this CV.
-Return only what is explicitly present — do not infer or fabricate values.
-If a field is not present, omit it.
-
-CV text:
-${preview}`,
-        },
-      ],
+      messages: [{ role: "user", content: messageContent }],
       tools: [
         {
           name: "submit_contact_details",
@@ -369,16 +375,29 @@ ${JSON.stringify(candidate, null, 2)}`,
 async function requestStructuredScreening({
   anthropic,
   model,
-  prompt,
+  cvContent,
+  promptText,
 }: {
   anthropic: Anthropic;
   model: string;
-  prompt: string;
+  cvContent: CvContent;
+  promptText: string;
 }) {
+  const messageContent: Anthropic.Messages.ContentBlockParam[] =
+    cvContent.kind === "pdf"
+      ? [
+          {
+            type: "document",
+            source: { type: "base64", media_type: "application/pdf", data: cvContent.base64 },
+          },
+          { type: "text", text: promptText },
+        ]
+      : [{ type: "text", text: promptText }];
+
   const response = await anthropic.messages.create({
     model,
     max_tokens: 2400,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: messageContent }],
     tools: [
       {
         name: "submit_screening_result",
@@ -596,7 +615,7 @@ export async function processApplicationScreening(applicationId: string) {
   const activeProfile = await getActiveScoringProfile();
 
   try {
-    const cvText = await extractCvText(await fileData.arrayBuffer(), application.cv_mime_type);
+    const cvContent = await prepareCvContent(await fileData.arrayBuffer(), application.cv_mime_type);
     const jobData = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs;
     const threshold = jobData?.screening_threshold ?? 70;
     const skills = toStringArray(jobData?.skills);
@@ -607,14 +626,14 @@ export async function processApplicationScreening(applicationId: string) {
     }
     const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
-    // For manually uploaded CVs, attempt to extract real contact details from the text
+    // For manually uploaded CVs, attempt to extract real contact details from the CV
     // and patch the placeholder candidate row. Failures here must never block screening.
     if (application.source === "recruiter_manual" && application.candidate_id) {
       try {
         const contacts = await extractCandidateContacts(
           anthropic,
           getSelectedModel(activeProfile),
-          cvText,
+          cvContent,
         );
         if (contacts.email || contacts.name || contacts.phone) {
           const { data: currentCandidate } = await supabase
@@ -649,8 +668,8 @@ export async function processApplicationScreening(applicationId: string) {
       }
     }
 
-    const prompt = buildContextualPrompt({
-      cvText,
+    const promptText = buildContextualPrompt({
+      cvText: cvContent.kind === "text" ? cvContent.text : undefined,
       jobTitle: jobData?.title ?? "Unknown role",
       threshold,
       skills,
@@ -662,7 +681,7 @@ export async function processApplicationScreening(applicationId: string) {
     const modelErrors: string[] = [];
     for (const model of getCandidateModels(activeProfile)) {
       try {
-        parsed = await requestStructuredScreening({ anthropic, model, prompt });
+        parsed = await requestStructuredScreening({ anthropic, model, cvContent, promptText });
         selectedModel = model;
         break;
       } catch (error) {
