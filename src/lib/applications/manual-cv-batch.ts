@@ -1,5 +1,5 @@
-import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getServerEnv } from "@/lib/env";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createApplicationWithUploadedCv,
@@ -192,39 +192,20 @@ export async function runManualCvBatchUpload(params: {
   }
 
   if (job.screening_enabled && applicationIds.length) {
-    const ids = [...applicationIds];
-    try {
-      after(async () => {
-        let processApplicationScreening: (applicationId: string) => Promise<unknown>;
-        try {
-          ({ processApplicationScreening } = await import("@/lib/screening/process-application"));
-        } catch (importErr) {
-          const message =
-            importErr instanceof Error ? importErr.message : "Screening module could not load.";
-          console.error("Manual CV screening startup failed:", importErr);
-          await moveManualUploadsToReview(admin, {
-            jobId: job.id,
-            applicationIds: ids,
-            message,
-          });
-          return;
-        }
-
-        for (const id of ids) {
-          try {
-            await processApplicationScreening(id);
-          } catch (err) {
-            console.error("Manual CV screening failed:", id, err);
-            await moveManualUploadsToReview(admin, {
-              jobId: job.id,
-              applicationIds: [id],
-              message: err instanceof Error ? err.message : "Screening failed before it could start.",
-            });
-          }
-        }
-      });
-    } catch (afterErr) {
-      console.error("manual-cv-batch: after() registration failed", afterErr);
+    const { APP_BASE_URL } = getServerEnv();
+    for (const id of applicationIds) {
+      try {
+        // Fire-and-forget: each screening call runs in its own Vercel function (maxDuration=300).
+        // We don't await the result here so the upload response returns quickly.
+        void fetch(`${APP_BASE_URL}/api/applications/${id}/screen`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }).catch((err) => {
+          console.error(`Manual CV screening fetch failed for ${id}:`, err);
+        });
+      } catch (err) {
+        console.error(`Manual CV screening dispatch failed for ${id}:`, err);
+      }
     }
   }
 
