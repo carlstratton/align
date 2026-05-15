@@ -11,10 +11,10 @@ function publicBoardClient() {
 }
 
 const LIST_SELECT =
-  "id, slug, title, location_city, location_country, remote_type, hybrid_office_days_per_week, employment_type, salary_min, salary_max, salary_currency, created_at, published_at, companies(name, logo_storage_path)";
+  "id, slug, title, location_city, location_country, remote_type, hybrid_office_days_per_week, employment_type, salary_min, salary_max, salary_currency, logo_storage_path, created_at, published_at, companies(name)";
 
 const DETAIL_SELECT =
-  "id, title, summary, role_category, location_country, location_city, remote_type, hybrid_office_days_per_week, employment_type, seniority, salary_min, salary_max, salary_currency, responsibilities, requirements, nice_to_haves, benefits, skills, status, application_method, external_apply_url, companies(name, logo_storage_path)";
+  "id, title, summary, role_category, location_country, location_city, remote_type, hybrid_office_days_per_week, employment_type, seniority, salary_min, salary_max, salary_currency, logo_storage_path, responsibilities, requirements, nice_to_haves, benefits, skills, status, application_method, external_apply_url, companies(name)";
 
 const APPLY_GATE_SELECT = "id, title, status, application_method";
 

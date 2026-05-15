@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
-import { getCompanyLogoPublicUrl } from "@/lib/company-logo";
+import { getJobLogoPublicUrl } from "@/lib/job-logo";
 import { formatJobPostedLabel, formatSalaryRangeLabel } from "@/lib/format-job-listing";
 import { getPublicEnv } from "@/lib/env";
 import { getPublishedJobsForBoard } from "@/lib/jobs/published-queries";
@@ -19,9 +19,10 @@ type PublicJobListItem = {
   salary_min: number | null;
   salary_max: number | null;
   salary_currency: string | null;
+  logo_storage_path: string | null;
   created_at: string;
   published_at: string | null;
-  companies: { name: string; logo_storage_path: string | null } | null;
+  companies: { name: string } | null;
 };
 
 function workArrangementLabel(job: PublicJobListItem): string {
@@ -85,10 +86,7 @@ export default async function PublicJobsPage() {
                 .filter(Boolean)
                 .join(" • ");
 
-              const logoUrl = getCompanyLogoPublicUrl(
-                NEXT_PUBLIC_SUPABASE_URL,
-                job.companies?.logo_storage_path ?? null,
-              );
+              const logoUrl = getJobLogoPublicUrl(NEXT_PUBLIC_SUPABASE_URL, job.logo_storage_path);
 
               const badgeClass =
                 "h-auto rounded-md border border-black px-2 py-0.5 text-[12px] font-medium leading-4 text-black";

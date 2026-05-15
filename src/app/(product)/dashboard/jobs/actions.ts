@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { jobDraftSchema } from "@/lib/validation/job";
 import { fromMultiline, toJobPayload } from "@/lib/jobs";
-import { uploadCompanyLogoAndUpdateRow } from "@/lib/company-logo";
+import { uploadJobLogoToStorage } from "@/lib/job-logo";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -140,7 +140,7 @@ export async function createJobAction(formData: FormData) {
 
   const { data: companyRow, error: companyFetchError } = await supabase
     .from("companies")
-    .select("logo_storage_path, owner_id")
+    .select("owner_id")
     .eq("id", parsed.data.company_id)
     .maybeSingle();
 
@@ -149,28 +149,23 @@ export async function createJobAction(formData: FormData) {
   }
 
   const logoFile = getFormFile(formData, "company_logo");
-  let logoPath = companyRow.logo_storage_path;
+  let logoPath: string | null = null;
 
   if (logoFile) {
-    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(createAdminClient(), {
-      companyId: parsed.data.company_id,
+    const { path, error: logoErr } = await uploadJobLogoToStorage(createAdminClient(), {
+      userId: user.id,
       file: logoFile,
-      previousPath: companyRow.logo_storage_path,
+      previousPath: null,
     });
     if (logoErr) {
       redirect(`/dashboard/jobs/new?error=${encodeURIComponent(logoErr)}`);
     }
-    const { data: refreshed } = await supabase
-      .from("companies")
-      .select("logo_storage_path")
-      .eq("id", parsed.data.company_id)
-      .single();
-    logoPath = refreshed?.logo_storage_path ?? null;
+    logoPath = path;
   }
 
   if (status === "published" && !logoPath) {
     redirect(
-      `/dashboard/jobs/new?error=${encodeURIComponent("Add a company logo (PNG, JPEG, or WebP) before publishing.")}`,
+      `/dashboard/jobs/new?error=${encodeURIComponent("Add a job logo (PNG, JPEG, or WebP) before publishing.")}`,
     );
   }
 
@@ -179,6 +174,7 @@ export async function createJobAction(formData: FormData) {
     .from("jobs")
     .insert({
       ...payload,
+      logo_storage_path: logoPath,
       status,
       published_at: status === "published" ? new Date().toISOString() : null,
     })
@@ -223,7 +219,7 @@ export async function updateJobAction(formData: FormData) {
 
   const { data: companyRow, error: companyFetchError } = await supabase
     .from("companies")
-    .select("logo_storage_path, owner_id")
+    .select("owner_id")
     .eq("id", parsed.data.company_id)
     .maybeSingle();
 
@@ -231,16 +227,25 @@ export async function updateJobAction(formData: FormData) {
     redirect(`/dashboard/jobs/${jobId}/edit?error=${encodeURIComponent("Invalid company selection.")}`);
   }
 
+  const { data: existingJob } = await supabase
+    .from("jobs")
+    .select("logo_storage_path")
+    .eq("id", jobId)
+    .single();
+
   const logoFile = getFormFile(formData, "company_logo");
+  let newLogoPath: string | null | undefined;
+
   if (logoFile) {
-    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(createAdminClient(), {
-      companyId: parsed.data.company_id,
+    const { path, error: logoErr } = await uploadJobLogoToStorage(createAdminClient(), {
+      userId: user.id,
       file: logoFile,
-      previousPath: companyRow.logo_storage_path,
+      previousPath: existingJob?.logo_storage_path ?? null,
     });
     if (logoErr) {
       redirect(`/dashboard/jobs/${jobId}/edit?error=${encodeURIComponent(logoErr)}`);
     }
+    newLogoPath = path;
   }
 
   const { error } = await supabase
@@ -252,6 +257,7 @@ export async function updateJobAction(formData: FormData) {
         parsed.data.remote_type === "hybrid" && parsed.data.hybrid_office_days_per_week > 0
           ? parsed.data.hybrid_office_days_per_week
           : null,
+      ...(newLogoPath !== undefined ? { logo_storage_path: newLogoPath } : {}),
     })
     .eq("id", jobId);
   if (error) {
@@ -270,18 +276,15 @@ export async function setJobStatusAction(formData: FormData) {
   const supabase = await createClient();
 
   if (status === "published") {
-    const { data: jobRow } = await supabase.from("jobs").select("company_id").eq("id", jobId).maybeSingle();
-    if (jobRow?.company_id) {
-      const { data: companyRow } = await supabase
-        .from("companies")
-        .select("logo_storage_path")
-        .eq("id", jobRow.company_id)
-        .maybeSingle();
-      if (!companyRow?.logo_storage_path) {
-        redirect(
-          `/dashboard/jobs/${jobId}?error=${encodeURIComponent("Add a company logo on the edit job page before publishing.")}`,
-        );
-      }
+    const { data: jobRow } = await supabase
+      .from("jobs")
+      .select("logo_storage_path")
+      .eq("id", jobId)
+      .maybeSingle();
+    if (!jobRow?.logo_storage_path) {
+      redirect(
+        `/dashboard/jobs/${jobId}?error=${encodeURIComponent("Add a job logo on the edit job page before publishing.")}`,
+      );
     }
   }
 

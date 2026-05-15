@@ -17,11 +17,11 @@ export default async function EditJobPage({ params, searchParams }: EditJobPageP
   } = await supabase.auth.getUser();
 
   const [{ data: companies }, { data: job }] = await Promise.all([
-    supabase.from("companies").select("id, name, logo_storage_path").eq("owner_id", user?.id ?? ""),
+    supabase.from("companies").select("id, name").eq("owner_id", user?.id ?? ""),
     supabase
       .from("jobs")
       .select(
-        "id, company_id, title, role_category, location_country, location_city, remote_type, hybrid_office_days_per_week, employment_type, seniority, salary_min, salary_max, salary_currency, summary, responsibilities, requirements, nice_to_haves, benefits, skills, screening_threshold",
+        "id, company_id, title, role_category, location_country, location_city, remote_type, hybrid_office_days_per_week, employment_type, seniority, salary_min, salary_max, salary_currency, summary, responsibilities, requirements, nice_to_haves, benefits, skills, screening_threshold, logo_storage_path",
       )
       .eq("id", id)
       .single(),
@@ -37,6 +37,7 @@ export default async function EditJobPage({ params, searchParams }: EditJobPageP
         companies={companies ?? []}
         action={updateJobAction}
         defaultValues={job}
+        existingLogoPath={job.logo_storage_path}
         submitLabel="Save changes"
         error={query.error}
       />

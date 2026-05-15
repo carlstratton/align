@@ -10,7 +10,7 @@ import {
   type JobDraftInput,
 } from "@/lib/validation/job";
 import { toMultiline } from "@/lib/jobs";
-import { getCompanyLogoPublicUrl } from "@/lib/company-logo";
+import { getJobLogoPublicUrl } from "@/lib/job-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,13 +19,13 @@ import { Label } from "@/components/ui/label";
 export type CompanyOption = {
   id: string;
   name: string;
-  logo_storage_path?: string | null;
 };
 
 type JobFormProps = {
   companies: CompanyOption[];
   action: (formData: FormData) => void;
   defaultValues?: Partial<JobDraftInput> & { id?: string };
+  existingLogoPath?: string | null;
   submitLabel: string;
   secondarySubmitLabel?: string;
   error?: string;
@@ -52,6 +52,7 @@ export function JobForm({
   companies,
   action,
   defaultValues,
+  existingLogoPath,
   submitLabel,
   secondarySubmitLabel,
   error,
@@ -88,15 +89,9 @@ export function JobForm({
   } = form;
 
   const remoteType = useWatch({ control: form.control, name: "remote_type" });
-  const companyId = useWatch({ control: form.control, name: "company_id" });
 
-  const selectedCompany = companies.find((c) => c.id === companyId);
-  const logoPublicUrl = getCompanyLogoPublicUrl(supabaseUrl, selectedCompany?.logo_storage_path ?? null);
-  const canPublish = Boolean(selectedCompany?.logo_storage_path) || hasStagedLogo;
-
-  useEffect(() => {
-    setHasStagedLogo(false);
-  }, [companyId]);
+  const logoPublicUrl = getJobLogoPublicUrl(supabaseUrl, existingLogoPath ?? null);
+  const canPublish = Boolean(existingLogoPath) || hasStagedLogo;
 
   useEffect(() => {
     if (remoteType !== "hybrid") {
@@ -150,7 +145,6 @@ export function JobForm({
             </div>
           ) : null}
           <Input
-            key={companyId}
             id="company_logo"
             name="company_logo"
             type="file"

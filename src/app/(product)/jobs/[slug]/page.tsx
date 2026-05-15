@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { PageCard } from "@/components/layout/page-card";
 import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
 import { getPublicEnv } from "@/lib/env";
-import { getCompanyLogoPublicUrl } from "@/lib/company-logo";
+import { getJobLogoPublicUrl } from "@/lib/job-logo";
 import {
   TypographyH1,
   TypographyH2,
@@ -44,12 +44,12 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
   const { NEXT_PUBLIC_SUPABASE_URL } = getPublicEnv();
   const companyRecord =
     job.companies && typeof job.companies === "object"
-      ? (job.companies as { name?: string; logo_storage_path?: string | null })
+      ? (job.companies as { name?: string })
       : null;
   const companyName = companyRecord?.name ? String(companyRecord.name) : "Company";
-  const logoUrl = getCompanyLogoPublicUrl(
+  const logoUrl = getJobLogoPublicUrl(
     NEXT_PUBLIC_SUPABASE_URL,
-    companyRecord?.logo_storage_path ?? null,
+    (job as unknown as { logo_storage_path?: string | null }).logo_storage_path ?? null,
   );
 
   const salaryLabel =

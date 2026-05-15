@@ -68,6 +68,7 @@ export type Database = {
           salary_min: number | null;
           salary_max: number | null;
           salary_currency: string | null;
+          logo_storage_path: string | null;
           screening_threshold: number;
           screening_enabled: boolean;
           application_method: "internal" | "external";
@@ -100,6 +101,7 @@ export type Database = {
           salary_min?: number | null;
           salary_max?: number | null;
           salary_currency?: string | null;
+          logo_storage_path?: string | null;
           screening_threshold?: number;
           screening_enabled?: boolean;
           application_method?: "internal" | "external";
