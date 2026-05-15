@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
 import { JobForm, type CompanyOption } from "@/components/jobs/job-form";
 import { JobPillSelector } from "@/components/jobs/job-pill-selector";
+import { emptyPillSelections, type PillSelections } from "@/lib/job-pill-taxonomy";
 import {
-  emptyPillSelections,
-  JOB_PILL_SECTIONS,
-  type PillSelections,
-} from "@/lib/job-pill-taxonomy";
+  getJobRoleTemplateById,
+  JOB_ROLE_TEMPLATES,
+  type JobRoleTemplateId,
+} from "@/lib/job-role-templates";
 import {
   generateJobDraftAction,
   type GenerateDraftState,
@@ -32,17 +33,28 @@ const defaultState: GenerateDraftState = {
 };
 
 export function JobPillBuilder({ companies, createAction, error }: JobPillBuilderProps) {
+  const [selectedTemplateId, setSelectedTemplateId] = useState<JobRoleTemplateId>("product_designer");
+  const activeTemplate = useMemo(
+    () => getJobRoleTemplateById(selectedTemplateId),
+    [selectedTemplateId],
+  );
+  const sections = activeTemplate.sections;
+
   const [pills, setPills] = useState<PillSelections>(emptyPillSelections());
   const [remoteType, setRemoteType] = useState("remote");
   const [state, formAction, isPending] = useActionState(generateJobDraftAction, defaultState);
   const [requiredError, setRequiredError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setPills(emptyPillSelections());
+  }, [selectedTemplateId]);
+
   const missingRequiredSections = useMemo(
     () =>
-      JOB_PILL_SECTIONS.filter((section) => section.required && pills[section.id].length === 0).map(
-        (section) => section.label,
-      ),
-    [pills],
+      sections
+        .filter((section) => section.required && pills[section.id].length === 0)
+        .map((section) => section.label),
+    [pills, sections],
   );
 
   const generatedDraft = state.ok ? state.draft : null;
@@ -69,10 +81,31 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
             className="space-y-4"
           >
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-sm">
+              <label className="text-sm md:col-span-2">
                 <Label className="mb-1">Job title *</Label>
-                <Input required name="title" placeholder="Senior Product Manager" />
+                <select
+                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value as JobRoleTemplateId)}
+                >
+                  {JOB_ROLE_TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.id === "generic" ? "Custom role…" : t.title}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Chip options below update based on the role you pick. Custom role uses the generic pill library.
+                </p>
               </label>
+              {selectedTemplateId === "generic" ? (
+                <label className="text-sm md:col-span-2">
+                  <Label className="mb-1">Custom title *</Label>
+                  <Input required name="title" placeholder="e.g. Senior Product Manager" />
+                </label>
+              ) : (
+                <input type="hidden" name="title" value={activeTemplate.title} />
+              )}
               <label className="text-sm">
                 <Label className="mb-1">Role category</Label>
                 <Input name="role_category" placeholder="Product (optional)" />
@@ -166,7 +199,12 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
               </label>
             </div>
 
-            <JobPillSelector value={pills} onChange={setPills} />
+            <JobPillSelector
+              key={selectedTemplateId}
+              sections={sections}
+              value={pills}
+              onChange={setPills}
+            />
 
             {requiredError ? <p className="text-sm text-destructive">{requiredError}</p> : null}
             {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}

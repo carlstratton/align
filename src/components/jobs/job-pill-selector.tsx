@@ -1,16 +1,17 @@
 "use client";
 
-import { JOB_PILL_SECTIONS, type PillSectionId, type PillSelections } from "@/lib/job-pill-taxonomy";
+import type { PillSection, PillSectionId, PillSelections } from "@/lib/job-pill-taxonomy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type JobPillSelectorProps = {
+  sections: PillSection[];
   value: PillSelections;
   onChange: (value: PillSelections) => void;
 };
 
-export function JobPillSelector({ value, onChange }: JobPillSelectorProps) {
+export function JobPillSelector({ sections, value, onChange }: JobPillSelectorProps) {
   function togglePill(sectionId: PillSectionId, option: string) {
     const existing = value[sectionId];
     const next = existing.includes(option)
@@ -25,7 +26,7 @@ export function JobPillSelector({ value, onChange }: JobPillSelectorProps) {
 
   return (
     <div className="space-y-4">
-      {JOB_PILL_SECTIONS.map((section) => (
+      {sections.map((section) => (
         <Card key={section.id}>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
