@@ -81,7 +81,7 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
             className="space-y-4"
           >
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-sm md:col-span-2">
+              <label className="text-sm">
                 <Label className="mb-1">Job title *</Label>
                 <select
                   className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
@@ -99,7 +99,7 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
                 </p>
               </label>
               {selectedTemplateId === "generic" ? (
-                <label className="text-sm md:col-span-2">
+                <label className="text-sm">
                   <Label className="mb-1">Custom title *</Label>
                   <Input required name="title" placeholder="e.g. Senior Product Manager" />
                 </label>
