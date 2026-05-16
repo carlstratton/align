@@ -251,12 +251,18 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
               <CardHeader className="pb-0">
                 <TypographyH4>Skills</TypographyH4>
               </CardHeader>
-              <CardContent>
-                <TypographyList className="my-0 ml-0 list-outside list-disc space-y-1.5 pl-5 text-sm">
-                  {skills.map((skill, i) => (
-                    <TypographyListItem key={`skill-${i}-${skill.slice(0, 48)}`}>{skill}</TypographyListItem>
-                  ))}
-                </TypographyList>
+              <CardContent className="flex flex-col gap-2 text-sm">
+                {skills.map((skill, i) => (
+                  <div
+                    key={`skill-${i}-${skill.slice(0, 48)}`}
+                    className="flex gap-2 text-pretty leading-relaxed"
+                  >
+                    <span className="shrink-0 text-muted-foreground" aria-hidden>
+                      •
+                    </span>
+                    <span className="min-w-0 flex-1 text-foreground">{skill}</span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           ) : null}
@@ -267,12 +273,18 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
               <CardHeader className="pb-0">
                 <TypographyH4>Benefits</TypographyH4>
               </CardHeader>
-              <CardContent>
-                <TypographyList className="my-0 ml-0 list-outside list-disc space-y-1.5 pl-5 text-sm">
-                  {benefits.map((item, i) => (
-                    <TypographyListItem key={`ben-${i}-${item.slice(0, 48)}`}>{item}</TypographyListItem>
-                  ))}
-                </TypographyList>
+              <CardContent className="flex flex-col gap-2 text-sm">
+                {benefits.map((item, i) => (
+                  <div
+                    key={`ben-${i}-${item.slice(0, 48)}`}
+                    className="flex gap-2 text-pretty leading-relaxed"
+                  >
+                    <span className="shrink-0 text-muted-foreground" aria-hidden>
+                      •
+                    </span>
+                    <span className="min-w-0 flex-1 text-foreground">{item}</span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           ) : null}
