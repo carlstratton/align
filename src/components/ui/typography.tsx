@@ -41,7 +41,7 @@ function TypographyH3({ className, ...props }: React.ComponentProps<"h3">) {
 function TypographyH4({ className, ...props }: React.ComponentProps<"h4">) {
   return (
     <h4
-      className={cn("scroll-m-20 text-sm font-semibold tracking-tight text-foreground", className)}
+      className={cn("scroll-m-20 text-base font-semibold tracking-tight text-foreground", className)}
       {...props}
     />
   );

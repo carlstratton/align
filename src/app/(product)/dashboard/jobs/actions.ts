@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { jobDraftSchema } from "@/lib/validation/job";
 import { fromMultiline, toJobPayload } from "@/lib/jobs";
 import { uploadJobLogoToStorage } from "@/lib/job-logo";
+import { uploadCompanyLogoAndUpdateRow } from "@/lib/company-logo";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -69,11 +70,27 @@ function formatValidationError(error: {
   return messages.join(" | ");
 }
 
-export async function createCompanyAction(formData: FormData) {
+export type CompanyUpsertState = {
+  ok: boolean;
+  error: string | null;
+  company: {
+    id: string;
+    name: string;
+    logo_storage_path: string | null;
+    about: string | null;
+  } | null;
+};
+
+export async function createCompanyAction(
+  _prevState: CompanyUpsertState,
+  formData: FormData,
+): Promise<CompanyUpsertState> {
   const name = getString(formData, "name");
   if (!name) {
-    redirect("/dashboard/jobs/new?error=Company%20name%20is%20required");
+    return { ok: false, error: "Company name is required.", company: null };
   }
+
+  const about = getString(formData, "about") || null;
 
   const supabase = await createClient();
   const {
@@ -81,7 +98,7 @@ export async function createCompanyAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/login");
+    return { ok: false, error: "You must be signed in.", company: null };
   }
 
   // Backfill profile for users created before profile bootstrap was added.
@@ -100,23 +117,112 @@ export async function createCompanyAction(formData: FormData) {
     });
 
     if (profileError) {
-      redirect(`/dashboard/jobs/new?error=${encodeURIComponent(profileError.message)}`);
+      return { ok: false, error: profileError.message, company: null };
     }
   }
 
-  const { error } = await supabase.from("companies").insert({
-    owner_id: user.id,
-    name,
-    slug: name.toLowerCase().replace(/\s+/g, "-"),
-  });
+  const { data: insertedCompany, error: insertError } = await supabase
+    .from("companies")
+    .insert({
+      owner_id: user.id,
+      name,
+      slug: name.toLowerCase().replace(/\s+/g, "-"),
+      about,
+    })
+    .select("id, name, logo_storage_path, about")
+    .single();
 
-  if (error) {
-    redirect(`/dashboard/jobs/new?error=${encodeURIComponent(error.message)}`);
+  if (insertError || !insertedCompany) {
+    return { ok: false, error: insertError?.message ?? "Failed to create company.", company: null };
+  }
+
+  const logoFile = getFormFile(formData, "logo");
+  if (logoFile) {
+    const adminSupabase = createAdminClient();
+    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(adminSupabase, {
+      companyId: insertedCompany.id,
+      file: logoFile,
+      previousPath: null,
+    });
+    if (logoErr) {
+      return { ok: false, error: logoErr, company: insertedCompany };
+    }
+    const { data: withLogo } = await supabase
+      .from("companies")
+      .select("id, name, logo_storage_path, about")
+      .eq("id", insertedCompany.id)
+      .single();
+    if (withLogo) {
+      revalidatePath("/dashboard/jobs");
+      revalidatePath("/dashboard/jobs/new");
+      return { ok: true, error: null, company: withLogo };
+    }
   }
 
   revalidatePath("/dashboard/jobs");
   revalidatePath("/dashboard/jobs/new");
-  redirect("/dashboard/jobs/new");
+  return { ok: true, error: null, company: insertedCompany };
+}
+
+export async function updateCompanyAction(
+  _prevState: CompanyUpsertState,
+  formData: FormData,
+): Promise<CompanyUpsertState> {
+  const companyId = getString(formData, "company_id");
+  const name = getString(formData, "name");
+  if (!companyId) return { ok: false, error: "Missing company ID.", company: null };
+  if (!name) return { ok: false, error: "Company name is required.", company: null };
+
+  const about = getString(formData, "about") || null;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false, error: "You must be signed in.", company: null };
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from("companies")
+    .select("owner_id, logo_storage_path")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (fetchErr || !existing || existing.owner_id !== user.id) {
+    return { ok: false, error: "Company not found or access denied.", company: null };
+  }
+
+  const { error: updateErr } = await supabase
+    .from("companies")
+    .update({ name, about, slug: name.toLowerCase().replace(/\s+/g, "-") })
+    .eq("id", companyId);
+
+  if (updateErr) {
+    return { ok: false, error: updateErr.message, company: null };
+  }
+
+  const logoFile = getFormFile(formData, "logo");
+  if (logoFile) {
+    const adminSupabase = createAdminClient();
+    const { error: logoErr } = await uploadCompanyLogoAndUpdateRow(adminSupabase, {
+      companyId,
+      file: logoFile,
+      previousPath: existing.logo_storage_path,
+    });
+    if (logoErr) {
+      return { ok: false, error: logoErr, company: null };
+    }
+  }
+
+  const { data: updated } = await supabase
+    .from("companies")
+    .select("id, name, logo_storage_path, about")
+    .eq("id", companyId)
+    .single();
+
+  revalidatePath("/dashboard/jobs");
+  revalidatePath("/dashboard/jobs/new");
+  return { ok: true, error: null, company: updated ?? null };
 }
 
 export async function createJobAction(formData: FormData) {
@@ -140,7 +246,7 @@ export async function createJobAction(formData: FormData) {
 
   const { data: companyRow, error: companyFetchError } = await supabase
     .from("companies")
-    .select("owner_id")
+    .select("owner_id, logo_storage_path")
     .eq("id", parsed.data.company_id)
     .maybeSingle();
 
@@ -163,9 +269,12 @@ export async function createJobAction(formData: FormData) {
     logoPath = path;
   }
 
-  if (status === "published" && !logoPath) {
+  const hasListingImage = Boolean(logoPath || companyRow.logo_storage_path);
+  if (status === "published" && !hasListingImage) {
     redirect(
-      `/dashboard/jobs/new?error=${encodeURIComponent("Add a job logo (PNG, JPEG, or WebP) before publishing.")}`,
+      `/dashboard/jobs/new?error=${encodeURIComponent(
+        "Add a listing logo on this form or upload a company badge in the company dialog before publishing.",
+      )}`,
     );
   }
 
@@ -274,16 +383,35 @@ export async function setJobStatusAction(formData: FormData) {
   const jobId = getString(formData, "job_id");
   const status = getString(formData, "status");
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const { data: jobRow, error: jobFetchError } = await supabase
+    .from("jobs")
+    .select("logo_storage_path, company_id, recruiter_id")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (jobFetchError || !jobRow || jobRow.recruiter_id !== user.id) {
+    redirect(`/dashboard/jobs/${jobId}?error=${encodeURIComponent("You cannot update this job.")}`);
+  }
 
   if (status === "published") {
-    const { data: jobRow } = await supabase
-      .from("jobs")
+    const { data: companyRow } = await supabase
+      .from("companies")
       .select("logo_storage_path")
-      .eq("id", jobId)
+      .eq("id", jobRow.company_id)
       .maybeSingle();
-    if (!jobRow?.logo_storage_path) {
+    const hasListingImage = Boolean(jobRow.logo_storage_path || companyRow?.logo_storage_path);
+    if (!hasListingImage) {
       redirect(
-        `/dashboard/jobs/${jobId}?error=${encodeURIComponent("Add a job logo on the edit job page before publishing.")}`,
+        `/dashboard/jobs/${jobId}?error=${encodeURIComponent(
+          "Add a listing logo on the edit job page, or upload a company badge when creating or editing the company.",
+        )}`,
       );
     }
   }

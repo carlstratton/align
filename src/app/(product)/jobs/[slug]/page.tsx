@@ -7,7 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { PageCard } from "@/components/layout/page-card";
 import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
 import { getPublicEnv } from "@/lib/env";
-import { getJobLogoPublicUrl } from "@/lib/job-logo";
+import { getListingLogoPublicUrl } from "@/lib/listing-logo";
+import { formatEmploymentType, formatRemoteType, formatSeniority } from "@/lib/format-job-listing";
 import {
   TypographyH1,
   TypographyH2,
@@ -17,6 +18,7 @@ import {
   TypographyMuted,
   TypographyP,
 } from "@/components/ui/typography";
+import { flattenJobListingItems } from "@/lib/jobs";
 
 type PublicJobPageProps = {
   params: Promise<{ slug: string }>;
@@ -44,12 +46,13 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
   const { NEXT_PUBLIC_SUPABASE_URL } = getPublicEnv();
   const companyRecord =
     job.companies && typeof job.companies === "object"
-      ? (job.companies as { name?: string })
+      ? (job.companies as { name?: string; logo_storage_path?: string | null })
       : null;
   const companyName = companyRecord?.name ? String(companyRecord.name) : "Company";
-  const logoUrl = getJobLogoPublicUrl(
+  const logoUrl = getListingLogoPublicUrl(
     NEXT_PUBLIC_SUPABASE_URL,
     (job as unknown as { logo_storage_path?: string | null }).logo_storage_path ?? null,
+    companyRecord?.logo_storage_path ?? null,
   );
 
   const salaryLabel =
@@ -67,6 +70,19 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
         job.location_city ? ` (${job.location_city})` : ""
       }.`
     : null;
+
+  const jobRaw = job as unknown as {
+    responsibilities?: string[];
+    requirements?: string[];
+    nice_to_haves?: string[];
+    benefits?: string[];
+    skills?: string[];
+  };
+  const responsibilities = flattenJobListingItems(jobRaw.responsibilities);
+  const requirements = flattenJobListingItems(jobRaw.requirements);
+  const niceToHaves = flattenJobListingItems(jobRaw.nice_to_haves);
+  const benefits = flattenJobListingItems(jobRaw.benefits);
+  const skills = flattenJobListingItems(jobRaw.skills);
 
   const applyButton =
     job.application_method === "internal" ? (
@@ -116,13 +132,13 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
             </TypographyP>
             <div className="mt-1 flex flex-wrap gap-2">
               {job.employment_type ? (
-                <Badge variant="secondary">{job.employment_type}</Badge>
+                <Badge variant="secondary">{formatEmploymentType(job.employment_type)}</Badge>
               ) : null}
               {job.remote_type ? (
-                <Badge variant="secondary">{job.remote_type}</Badge>
+                <Badge variant="secondary">{formatRemoteType(job.remote_type)}</Badge>
               ) : null}
               {job.seniority ? (
-                <Badge variant="secondary">{job.seniority}</Badge>
+                <Badge variant="secondary">{formatSeniority(job.seniority)}</Badge>
               ) : null}
             </div>
             {salaryLabel ? (
@@ -148,34 +164,34 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
             <TypographyP className="text-base leading-relaxed">{hybridOfficeSentence}</TypographyP>
           ) : null}
 
-          {job.responsibilities?.length ? (
+          {responsibilities.length ? (
             <section>
               <TypographyH2 className="mb-3 border-0 pb-0 text-lg sm:text-xl">Responsibilities</TypographyH2>
-              <TypographyList className="my-0 ml-0 space-y-2 pl-5 text-sm leading-relaxed">
-                {job.responsibilities.map((item: string) => (
-                  <TypographyListItem key={item}>{item}</TypographyListItem>
+              <TypographyList className="my-0 ml-0 list-outside list-disc space-y-2 pl-5 text-sm leading-relaxed">
+                {responsibilities.map((item, i) => (
+                  <TypographyListItem key={`resp-${i}-${item.slice(0, 48)}`}>{item}</TypographyListItem>
                 ))}
               </TypographyList>
             </section>
           ) : null}
 
-          {job.requirements?.length ? (
+          {requirements.length ? (
             <section>
               <TypographyH2 className="mb-3 border-0 pb-0 text-lg sm:text-xl">Requirements</TypographyH2>
-              <TypographyList className="my-0 ml-0 space-y-2 pl-5 text-sm leading-relaxed">
-                {job.requirements.map((item: string) => (
-                  <TypographyListItem key={item}>{item}</TypographyListItem>
+              <TypographyList className="my-0 ml-0 list-outside list-disc space-y-2 pl-5 text-sm leading-relaxed">
+                {requirements.map((item, i) => (
+                  <TypographyListItem key={`req-${i}-${item.slice(0, 48)}`}>{item}</TypographyListItem>
                 ))}
               </TypographyList>
             </section>
           ) : null}
 
-          {job.nice_to_haves?.length ? (
+          {niceToHaves.length ? (
             <section>
               <TypographyH2 className="mb-3 border-0 pb-0 text-lg sm:text-xl">Nice to have</TypographyH2>
-              <TypographyList className="my-0 ml-0 space-y-2 pl-5 text-sm leading-relaxed">
-                {job.nice_to_haves.map((item: string) => (
-                  <TypographyListItem key={item}>{item}</TypographyListItem>
+              <TypographyList className="my-0 ml-0 list-outside list-disc space-y-2 pl-5 text-sm leading-relaxed">
+                {niceToHaves.map((item, i) => (
+                  <TypographyListItem key={`nice-${i}-${item.slice(0, 48)}`}>{item}</TypographyListItem>
                 ))}
               </TypographyList>
             </section>
@@ -186,7 +202,7 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
         <aside className="flex flex-col gap-4">
           {/* Role meta card */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-0">
               <TypographyH4>Role details</TypographyH4>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -199,13 +215,13 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
               {job.seniority ? (
                 <div className="flex justify-between gap-2">
                   <span>Seniority</span>
-                  <span className="text-right font-medium text-foreground">{job.seniority}</span>
+                  <span className="text-right font-medium text-foreground">{formatSeniority(job.seniority)}</span>
                 </div>
               ) : null}
               {job.employment_type ? (
                 <div className="flex justify-between gap-2">
                   <span>Contract</span>
-                  <span className="text-right font-medium text-foreground">{job.employment_type}</span>
+                  <span className="text-right font-medium text-foreground">{formatEmploymentType(job.employment_type)}</span>
                 </div>
               ) : null}
               {job.remote_type ? (
@@ -215,8 +231,8 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
                     {job.remote_type === "hybrid" &&
                     typeof job.hybrid_office_days_per_week === "number" &&
                     job.hybrid_office_days_per_week > 0
-                      ? `Hybrid (${job.hybrid_office_days_per_week}d office)`
-                      : job.remote_type}
+                      ? `Hybrid (${job.hybrid_office_days_per_week}d in office)`
+                      : formatRemoteType(job.remote_type)}
                   </span>
                 </div>
               ) : null}
@@ -230,36 +246,31 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
           </Card>
 
           {/* Skills */}
-          {job.skills?.length ? (
+          {skills.length ? (
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-0">
                 <TypographyH4>Skills</TypographyH4>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {job.skills.map((skill: string) => (
-                    <span
-                      key={skill}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
-                    >
-                      {skill}
-                    </span>
+                <TypographyList className="my-0 ml-0 list-outside list-disc space-y-1.5 pl-5 text-sm">
+                  {skills.map((skill, i) => (
+                    <TypographyListItem key={`skill-${i}-${skill.slice(0, 48)}`}>{skill}</TypographyListItem>
                   ))}
-                </div>
+                </TypographyList>
               </CardContent>
             </Card>
           ) : null}
 
           {/* Benefits */}
-          {job.benefits?.length ? (
+          {benefits.length ? (
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-0">
                 <TypographyH4>Benefits</TypographyH4>
               </CardHeader>
               <CardContent>
-                <TypographyList className="my-0 ml-0 space-y-1.5 pl-4 text-sm">
-                  {job.benefits.map((item: string) => (
-                    <TypographyListItem key={item}>{item}</TypographyListItem>
+                <TypographyList className="my-0 ml-0 list-outside list-disc space-y-1.5 pl-5 text-sm">
+                  {benefits.map((item, i) => (
+                    <TypographyListItem key={`ben-${i}-${item.slice(0, 48)}`}>{item}</TypographyListItem>
                   ))}
                 </TypographyList>
               </CardContent>

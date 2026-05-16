@@ -35,6 +35,7 @@ export type Database = {
           name: string;
           slug: string | null;
           logo_storage_path: string | null;
+          about: string | null;
         };
         Insert: {
           id?: string;
@@ -42,6 +43,7 @@ export type Database = {
           name: string;
           slug?: string | null;
           logo_storage_path?: string | null;
+          about?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["companies"]["Insert"]>;
       };

@@ -1,3 +1,40 @@
+const EMPLOYMENT_LABELS: Record<string, string> = {
+  full_time: "Full time",
+  part_time: "Part time",
+  contract: "Contract",
+  temporary: "Temporary",
+  internship: "Internship",
+};
+
+const REMOTE_LABELS: Record<string, string> = {
+  remote: "Remote",
+  hybrid: "Hybrid",
+  onsite: "On-site",
+};
+
+const SENIORITY_LABELS: Record<string, string> = {
+  junior: "Junior",
+  mid: "Mid",
+  senior: "Senior",
+  lead: "Lead",
+  executive: "Executive",
+};
+
+export function formatEmploymentType(value: string | null | undefined): string {
+  if (!value) return "—";
+  return EMPLOYMENT_LABELS[value] ?? value.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+export function formatRemoteType(value: string | null | undefined): string {
+  if (!value) return "—";
+  return REMOTE_LABELS[value] ?? value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+export function formatSeniority(value: string | null | undefined): string {
+  if (!value) return "—";
+  return SENIORITY_LABELS[value] ?? value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 /**
  * Relative label for job posting date (published_at or created_at ISO string).
  */

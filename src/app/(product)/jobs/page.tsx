@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
-import { getJobLogoPublicUrl } from "@/lib/job-logo";
-import { formatJobPostedLabel, formatSalaryRangeLabel } from "@/lib/format-job-listing";
+import { getListingLogoPublicUrl } from "@/lib/listing-logo";
+import { formatJobPostedLabel, formatSalaryRangeLabel, formatEmploymentType, formatRemoteType } from "@/lib/format-job-listing";
 import { getPublicEnv } from "@/lib/env";
 import { getPublishedJobsForBoard } from "@/lib/jobs/published-queries";
 
@@ -22,28 +22,17 @@ type PublicJobListItem = {
   logo_storage_path: string | null;
   created_at: string;
   published_at: string | null;
-  companies: { name: string } | null;
+  companies: { name: string; logo_storage_path: string | null } | null;
 };
 
 function workArrangementLabel(job: PublicJobListItem): string {
-  if (job.remote_type === "remote") return "Remote";
-  if (job.remote_type === "onsite") return "In office";
   if (job.remote_type === "hybrid") {
     const d = job.hybrid_office_days_per_week;
     if (typeof d === "number" && d > 0) {
       return `Hybrid · ${d} ${d === 1 ? "day" : "days"} in office`;
     }
-    return "Hybrid";
   }
-  return job.remote_type ?? "—";
-}
-
-function employmentLabel(employmentType: string | null | undefined): string {
-  if (!employmentType) return "—";
-  return employmentType
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+  return formatRemoteType(job.remote_type);
 }
 
 export default async function PublicJobsPage() {
@@ -86,7 +75,11 @@ export default async function PublicJobsPage() {
                 .filter(Boolean)
                 .join(" • ");
 
-              const logoUrl = getJobLogoPublicUrl(NEXT_PUBLIC_SUPABASE_URL, job.logo_storage_path);
+              const logoUrl = getListingLogoPublicUrl(
+                NEXT_PUBLIC_SUPABASE_URL,
+                job.logo_storage_path,
+                job.companies?.logo_storage_path ?? null,
+              );
 
               const badgeClass =
                 "h-auto rounded-md border border-black px-2 py-0.5 text-[12px] font-medium leading-4 text-black";
@@ -122,7 +115,7 @@ export default async function PublicJobsPage() {
                         {workArrangementLabel(job)}
                       </Badge>
                       <Badge variant="outline" className={badgeClass}>
-                        {employmentLabel(job.employment_type)}
+                        {formatEmploymentType(job.employment_type)}
                       </Badge>
                     </div>
                   </div>

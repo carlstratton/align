@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   jobDraftSchema,
@@ -10,15 +10,25 @@ import {
   type JobDraftInput,
 } from "@/lib/validation/job";
 import { toMultiline } from "@/lib/jobs";
+import { getCompanyLogoPublicUrl } from "@/lib/company-logo";
 import { getJobLogoPublicUrl } from "@/lib/job-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type CompanyOption = {
   id: string;
   name: string;
+  logo_storage_path: string | null;
+  about: string | null;
 };
 
 type JobFormProps = {
@@ -89,9 +99,14 @@ export function JobForm({
   } = form;
 
   const remoteType = useWatch({ control: form.control, name: "remote_type" });
+  const companyId = useWatch({ control: form.control, name: "company_id" });
+
+  const selectedCompany = companies.find((c) => c.id === companyId);
+  const companyBadgePath = selectedCompany?.logo_storage_path ?? null;
 
   const logoPublicUrl = getJobLogoPublicUrl(supabaseUrl, existingLogoPath ?? null);
-  const canPublish = Boolean(existingLogoPath) || hasStagedLogo;
+  const companyBadgePublicUrl = getCompanyLogoPublicUrl(supabaseUrl, companyBadgePath);
+  const canPublish = Boolean(existingLogoPath || hasStagedLogo || companyBadgePath);
 
   useEffect(() => {
     if (remoteType !== "hybrid") {
@@ -107,31 +122,38 @@ export function JobForm({
   }
 
   return (
-    <form action={action} encType="multipart/form-data" className="space-y-4">
+    <form action={action} className="space-y-4">
       {defaultValues?.id ? <input type="hidden" name="job_id" value={defaultValues.id} /> : null}
       {error ? <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       <p className="text-xs text-muted-foreground">Fields marked with * are mandatory.</p>
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-sm">
-          <Label className="mb-1">Company *</Label>
-          <select
-            required
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2"
-            {...form.register("company_id")}
-          >
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
+        <div className="grid gap-1.5">
+          <Label>Company *</Label>
+          <Controller
+            control={form.control}
+            name="company_id"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a company" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
           {fieldError("company_id") ? (
-            <p className="mt-1 text-xs text-destructive">{fieldError("company_id")}</p>
+            <p className="text-xs text-destructive">{fieldError("company_id")}</p>
           ) : null}
-        </label>
+        </div>
         <div className="text-sm md:col-span-2">
           <Label className="mb-1" htmlFor="company_logo">
-            Company logo{secondarySubmitLabel ? " (required to publish)" : ""}
+            Listing logo{secondarySubmitLabel ? " (optional if company has a badge)" : ""}
           </Label>
           {logoPublicUrl ? (
             <div className="mt-2 mb-2 flex items-center gap-3">
@@ -141,7 +163,19 @@ export function JobForm({
                 alt=""
                 className="size-16 shrink-0 rounded-md border border-border object-cover"
               />
-              <span className="text-xs text-muted-foreground">Current logo on file</span>
+              <span className="text-xs text-muted-foreground">Listing-specific logo on file</span>
+            </div>
+          ) : companyBadgePublicUrl ? (
+            <div className="mt-2 mb-2 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={companyBadgePublicUrl}
+                alt=""
+                className="size-16 shrink-0 rounded-md border border-border object-cover"
+              />
+              <span className="text-xs text-muted-foreground">
+                Using company badge for listings (add a file above to override for this job only).
+              </span>
             </div>
           ) : null}
           <Input
@@ -168,23 +202,30 @@ export function JobForm({
             <p className="mt-1 text-xs text-destructive">{fieldError("role_category")}</p>
           ) : null}
         </label>
-        <label className="text-sm">
-          <Label className="mb-1">Seniority *</Label>
-          <select
-            required
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2"
-            {...form.register("seniority")}
-          >
-            <option value="junior">Junior</option>
-            <option value="mid">Mid</option>
-            <option value="senior">Senior</option>
-            <option value="lead">Lead</option>
-            <option value="executive">Executive</option>
-          </select>
+        <div className="grid gap-1.5">
+          <Label>Seniority *</Label>
+          <Controller
+            control={form.control}
+            name="seniority"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="junior">Junior</SelectItem>
+                  <SelectItem value="mid">Mid</SelectItem>
+                  <SelectItem value="senior">Senior</SelectItem>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="executive">Executive</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {fieldError("seniority") ? (
-            <p className="mt-1 text-xs text-destructive">{fieldError("seniority")}</p>
+            <p className="text-xs text-destructive">{fieldError("seniority")}</p>
           ) : null}
-        </label>
+        </div>
       </div>
 
       <label className="block text-sm">
@@ -209,61 +250,85 @@ export function JobForm({
             <p className="mt-1 text-xs text-destructive">{fieldError("location_city")}</p>
           ) : null}
         </label>
-        <label className="text-sm">
-          <Label className="mb-1">Remote type *</Label>
-          <select
-            required
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2"
-            {...form.register("remote_type")}
-          >
-            <option value="remote">Remote</option>
-            <option value="hybrid">Hybrid</option>
-            <option value="onsite">Onsite</option>
-          </select>
+        <div className="grid gap-1.5">
+          <Label>Remote type *</Label>
+          <Controller
+            control={form.control}
+            name="remote_type"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="remote">Remote</SelectItem>
+                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                  <SelectItem value="onsite">On-site</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {fieldError("remote_type") ? (
-            <p className="mt-1 text-xs text-destructive">{fieldError("remote_type")}</p>
-          ) : null}
-        </label>
-        <div className="text-sm" hidden={remoteType !== "hybrid"}>
-          <Label className="mb-1" htmlFor="hybrid_office_days_per_week">
-            Office days per week (hybrid)
-          </Label>
-          <select
-            id="hybrid_office_days_per_week"
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2"
-            {...form.register("hybrid_office_days_per_week", { valueAsNumber: true })}
-          >
-            <option value={0}>Open to discussion</option>
-            <option value={1}>1 day per week</option>
-            <option value={2}>2 days per week</option>
-            <option value={3}>3 days per week</option>
-            <option value={4}>4 days per week</option>
-            <option value={5}>5 days per week</option>
-          </select>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Only shown on the public listing if you pick more than zero days.
-          </p>
-          {fieldError("hybrid_office_days_per_week") ? (
-            <p className="mt-1 text-xs text-destructive">{fieldError("hybrid_office_days_per_week")}</p>
+            <p className="text-xs text-destructive">{fieldError("remote_type")}</p>
           ) : null}
         </div>
-        <label className="text-sm">
-          <Label className="mb-1">Employment *</Label>
-          <select
-            required
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2"
-            {...form.register("employment_type")}
-          >
-            <option value="full_time">Full-time</option>
-            <option value="part_time">Part-time</option>
-            <option value="contract">Contract</option>
-            <option value="temporary">Temporary</option>
-            <option value="internship">Internship</option>
-          </select>
+        {remoteType === "hybrid" ? (
+          <div className="grid gap-1.5">
+            <Label>Office days per week (hybrid)</Label>
+            <Controller
+              control={form.control}
+              name="hybrid_office_days_per_week"
+              render={({ field }) => (
+                <Select
+                  value={String(field.value ?? 0)}
+                  onValueChange={(v) => field.onChange(Number(v))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Open to discussion</SelectItem>
+                    <SelectItem value="1">1 day per week</SelectItem>
+                    <SelectItem value="2">2 days per week</SelectItem>
+                    <SelectItem value="3">3 days per week</SelectItem>
+                    <SelectItem value="4">4 days per week</SelectItem>
+                    <SelectItem value="5">5 days per week</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <p className="text-xs text-muted-foreground">
+              Only shown on the public listing if you pick more than zero days.
+            </p>
+            {fieldError("hybrid_office_days_per_week") ? (
+              <p className="text-xs text-destructive">{fieldError("hybrid_office_days_per_week")}</p>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="grid gap-1.5">
+          <Label>Employment *</Label>
+          <Controller
+            control={form.control}
+            name="employment_type"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full_time">Full time</SelectItem>
+                  <SelectItem value="part_time">Part time</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="temporary">Temporary</SelectItem>
+                  <SelectItem value="internship">Internship</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {fieldError("employment_type") ? (
-            <p className="mt-1 text-xs text-destructive">{fieldError("employment_type")}</p>
+            <p className="text-xs text-destructive">{fieldError("employment_type")}</p>
           ) : null}
-        </label>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -395,7 +460,7 @@ export function JobForm({
             title={
               canPublish
                 ? undefined
-                : "Upload a company logo or use a company that already has one."
+                : "Upload a listing logo here or choose a company that already has a badge."
             }
           >
             {secondarySubmitLabel}

@@ -17,7 +17,7 @@ export default async function EditJobPage({ params, searchParams }: EditJobPageP
   } = await supabase.auth.getUser();
 
   const [{ data: companies }, { data: job }] = await Promise.all([
-    supabase.from("companies").select("id, name").eq("owner_id", user?.id ?? ""),
+    supabase.from("companies").select("id, name, logo_storage_path, about").eq("owner_id", user?.id ?? ""),
     supabase
       .from("jobs")
       .select(

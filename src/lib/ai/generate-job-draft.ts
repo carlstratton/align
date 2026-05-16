@@ -7,6 +7,7 @@ import {
   remoteTypeSchema,
   seniorityLevelSchema,
 } from "@/lib/validation/job";
+import { flattenJobListingItems } from "@/lib/jobs";
 
 const generatedJobDraftSchema = z.object({
   title: z.string().min(3),
@@ -81,10 +82,7 @@ function expandItems(items: string[], prefix: string, fallback: string[]) {
 }
 
 function normalizeListItems(items: string[]) {
-  return items
-    .flatMap((item) => item.split(",").map((part) => part.trim()))
-    .map((item) => item.replace(/^[-*•]\s+/, "").trim())
-    .filter(Boolean);
+  return flattenJobListingItems(items);
 }
 
 function normalizeDraft(parsed: GeneratedJobDraft): GeneratedJobDraft {

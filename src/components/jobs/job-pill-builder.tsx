@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useActionState } from "react";
+import { useActionState, useCallback, useEffect, useMemo, startTransition, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PencilIcon, PlusIcon } from "lucide-react";
+
 import { JobForm, type CompanyOption } from "@/components/jobs/job-form";
 import { JobPillSelector } from "@/components/jobs/job-pill-selector";
+import { CompanyUpsertDialog } from "@/components/jobs/company-upsert-dialog";
 import { emptyPillSelections, type PillSelections } from "@/lib/job-pill-taxonomy";
 import {
   getJobRoleTemplateById,
@@ -16,8 +20,28 @@ import {
 } from "@/app/(product)/dashboard/jobs/generate/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  jobPillBasicsFormSchema,
+  type JobPillBasicsFormValues,
+} from "@/lib/validation/job-pill-basics";
 
 type JobPillBuilderProps = {
   companies: CompanyOption[];
@@ -32,7 +56,51 @@ const defaultState: GenerateDraftState = {
   draft: null,
 };
 
-export function JobPillBuilder({ companies, createAction, error }: JobPillBuilderProps) {
+const formDefaultValues: JobPillBasicsFormValues = {
+  title: "Product Designer",
+  role_category: "",
+  location_country: "",
+  location_city: "",
+  remote_type: "remote",
+  hybrid_office_days_per_week: 0,
+  employment_type: "full_time",
+  seniority: "mid",
+  salary_min: 60000,
+  salary_max: 90000,
+  salary_currency: "GBP",
+  screening_threshold: 70,
+};
+
+export function JobPillBuilder({ companies: initialCompanies, createAction, error }: JobPillBuilderProps) {
+  // Company list is managed client-side so new/edited companies appear immediately
+  const [companies, setCompanies] = useState<CompanyOption[]>(initialCompanies);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(initialCompanies[0]?.id ?? "");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
+
+  const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
+
+  function openAddDialog() {
+    setDialogMode("add");
+    setDialogOpen(true);
+  }
+  function openEditDialog() {
+    setDialogMode("edit");
+    setDialogOpen(true);
+  }
+  const handleCompanySaved = useCallback((company: CompanyOption) => {
+    setCompanies((prev) => {
+      const idx = prev.findIndex((c) => c.id === company.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = company;
+        return next;
+      }
+      return [...prev, company];
+    });
+    setSelectedCompanyId(company.id);
+  }, []);
+
   const [selectedTemplateId, setSelectedTemplateId] = useState<JobRoleTemplateId>("product_designer");
   const activeTemplate = useMemo(
     () => getJobRoleTemplateById(selectedTemplateId),
@@ -41,13 +109,24 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
   const sections = activeTemplate.sections;
 
   const [pills, setPills] = useState<PillSelections>(emptyPillSelections());
-  const [remoteType, setRemoteType] = useState("remote");
   const [state, formAction, isPending] = useActionState(generateJobDraftAction, defaultState);
   const [requiredError, setRequiredError] = useState<string | null>(null);
 
+  const form = useForm<JobPillBasicsFormValues>({
+    resolver: zodResolver(jobPillBasicsFormSchema),
+    defaultValues: formDefaultValues,
+  });
+
+  const remoteType = form.watch("remote_type");
+
   useEffect(() => {
     setPills(emptyPillSelections());
-  }, [selectedTemplateId]);
+    if (selectedTemplateId === "generic") {
+      form.setValue("title", "");
+    } else {
+      form.setValue("title", activeTemplate.title);
+    }
+  }, [selectedTemplateId, activeTemplate.title, form]);
 
   const missingRequiredSections = useMemo(
     () =>
@@ -59,164 +138,361 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
 
   const generatedDraft = state.ok ? state.draft : null;
 
+  function onSubmit(values: JobPillBasicsFormValues) {
+    if (missingRequiredSections.length > 0) {
+      setRequiredError(`Please select at least one pill for: ${missingRequiredSections.join(", ")}.`);
+      return;
+    }
+    setRequiredError(null);
+
+    const fd = new FormData();
+    fd.set("title", values.title.trim());
+    fd.set("role_category", values.role_category.trim());
+    fd.set("location_country", values.location_country.trim());
+    fd.set("location_city", values.location_city.trim());
+    fd.set("remote_type", values.remote_type);
+    const hybridDays = values.remote_type === "hybrid" ? values.hybrid_office_days_per_week : 0;
+    fd.set("hybrid_office_days_per_week", String(hybridDays));
+    fd.set("employment_type", values.employment_type);
+    fd.set("seniority", values.seniority);
+    fd.set("salary_min", String(values.salary_min));
+    fd.set("salary_max", String(values.salary_max));
+    fd.set("salary_currency", values.salary_currency.trim().toUpperCase());
+    fd.set("screening_threshold", String(values.screening_threshold));
+    fd.set("pills_json", JSON.stringify(pills));
+    startTransition(() => {
+      formAction(fd);
+    });
+  }
+
   return (
     <div className="space-y-6">
+      <CompanyUpsertDialog
+        mode={dialogMode}
+        company={dialogMode === "edit" ? selectedCompany : undefined}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSaved={handleCompanySaved}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>1) Define role basics and select keyword pills</CardTitle>
         </CardHeader>
         <CardContent>
-          <form
-            action={(formData) => {
-              if (missingRequiredSections.length > 0) {
-                setRequiredError(
-                  `Please select at least one pill for: ${missingRequiredSections.join(", ")}.`,
-                );
-                return;
-              }
-              setRequiredError(null);
-              formData.set("pills_json", JSON.stringify(pills));
-              formAction(formData);
-            }}
-            className="space-y-4"
-          >
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-sm">
-                <Label className="mb-1">Job title *</Label>
-                <select
-                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
-                  value={selectedTemplateId}
-                  onChange={(e) => setSelectedTemplateId(e.target.value as JobRoleTemplateId)}
-                >
-                  {JOB_ROLE_TEMPLATES.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.id === "generic" ? "Custom role…" : t.title}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Chip options below update based on the role you pick. Custom role uses the generic pill library.
-                </p>
-              </label>
-              {selectedTemplateId === "generic" ? (
-                <label className="text-sm">
-                  <Label className="mb-1">Custom title *</Label>
-                  <Input required name="title" placeholder="e.g. Senior Product Manager" />
-                </label>
-              ) : (
-                <input type="hidden" name="title" value={activeTemplate.title} />
-              )}
-              <label className="text-sm">
-                <Label className="mb-1">Role category</Label>
-                <Input name="role_category" placeholder="Product (optional)" />
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">Country *</Label>
-                <Input required name="location_country" placeholder="United Kingdom" />
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">City *</Label>
-                <Input required name="location_city" placeholder="London" />
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">Remote type *</Label>
-                <select
-                  required
-                  name="remote_type"
-                  value={remoteType}
-                  onChange={(e) => setRemoteType(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
-                >
-                  <option value="remote">Remote</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="onsite">Onsite</option>
-                </select>
-              </label>
-              <div className="text-sm" hidden={remoteType !== "hybrid"}>
-                <Label className="mb-1" htmlFor="pill_hybrid_office_days">
-                  Office days per week (hybrid)
-                </Label>
-                <select
-                  id="pill_hybrid_office_days"
-                  name="hybrid_office_days_per_week"
-                  defaultValue={0}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
-                >
-                  <option value={0}>Open to discussion</option>
-                  <option value={1}>1 day per week</option>
-                  <option value={2}>2 days per week</option>
-                  <option value={3}>3 days per week</option>
-                  <option value={4}>4 days per week</option>
-                  <option value={5}>5 days per week</option>
-                </select>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Only shown on the public listing if you pick more than zero days.
-                </p>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+              {/* Company selector */}
+              <div className="grid gap-2">
+                <Label>Company *</Label>
+                <div className="flex items-center gap-2">
+                  {companies.length > 0 ? (
+                    <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                      <SelectTrigger className="flex-1 w-full">
+                        <SelectValue placeholder="Select a company" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="flex-1 text-sm text-muted-foreground">No companies yet — add one to continue.</p>
+                  )}
+                  {selectedCompany ? (
+                    <Button type="button" variant="outline" size="sm" onClick={openEditDialog} className="shrink-0 gap-1.5">
+                      <PencilIcon className="size-3.5" />
+                      Edit
+                    </Button>
+                  ) : null}
+                  <Button type="button" variant="outline" size="sm" onClick={openAddDialog} className="shrink-0 gap-1.5">
+                    <PlusIcon className="size-3.5" />
+                    Add new
+                  </Button>
+                </div>
               </div>
-              <label className="text-sm">
-                <Label className="mb-1">Employment type *</Label>
-                <select
-                  required
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Job title *</Label>
+                  <Select
+                    value={selectedTemplateId}
+                    onValueChange={(v) => setSelectedTemplateId(v as JobRoleTemplateId)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {JOB_ROLE_TEMPLATES.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.id === "generic" ? "Custom role…" : t.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Chip options below update based on the role you pick. Custom role uses the generic pill
+                    library.
+                  </p>
+                </div>
+
+                {selectedTemplateId === "generic" ? (
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custom title *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Senior Product Manager" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
+
+                <FormField
+                  control={form.control}
+                  name="role_category"
+                  render={({ field }) => (
+                    <FormItem className="self-start">
+                      <FormLabel>Role category</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Product (optional)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location_country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="United Kingdom" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location_city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="London" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="remote_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Remote type *</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="remote">Remote</SelectItem>
+                          <SelectItem value="hybrid">Hybrid</SelectItem>
+                          <SelectItem value="onsite">On-site</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {remoteType === "hybrid" ? (
+                  <FormField
+                    control={form.control}
+                    name="hybrid_office_days_per_week"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Office days per week (hybrid)</FormLabel>
+                        <Select
+                          value={String(field.value)}
+                          onValueChange={(v) => field.onChange(Number(v))}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="0">Open to discussion</SelectItem>
+                            <SelectItem value="1">1 day per week</SelectItem>
+                            <SelectItem value="2">2 days per week</SelectItem>
+                            <SelectItem value="3">3 days per week</SelectItem>
+                            <SelectItem value="4">4 days per week</SelectItem>
+                            <SelectItem value="5">5 days per week</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Only shown on the public listing if you pick more than zero days.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
+
+                <FormField
+                  control={form.control}
                   name="employment_type"
-                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
-                >
-                  <option value="full_time">Full-time</option>
-                  <option value="part_time">Part-time</option>
-                  <option value="contract">Contract</option>
-                  <option value="temporary">Temporary</option>
-                  <option value="internship">Internship</option>
-                </select>
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">Seniority *</Label>
-                <select
-                  required
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Employment type *</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="full_time">Full time</SelectItem>
+                          <SelectItem value="part_time">Part time</SelectItem>
+                          <SelectItem value="contract">Contract</SelectItem>
+                          <SelectItem value="temporary">Temporary</SelectItem>
+                          <SelectItem value="internship">Internship</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="seniority"
-                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
-                >
-                  <option value="junior">Junior</option>
-                  <option value="mid">Mid</option>
-                  <option value="senior">Senior</option>
-                  <option value="lead">Lead</option>
-                  <option value="executive">Executive</option>
-                </select>
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">Salary min *</Label>
-                <Input required name="salary_min" type="number" defaultValue={60000} />
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">Salary max *</Label>
-                <Input required name="salary_max" type="number" defaultValue={90000} />
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">Currency *</Label>
-                <Input required name="salary_currency" defaultValue="GBP" />
-              </label>
-              <label className="text-sm">
-                <Label className="mb-1">Screening threshold *</Label>
-                <Input required name="screening_threshold" type="number" defaultValue={70} />
-              </label>
-            </div>
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seniority *</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="junior">Junior</SelectItem>
+                          <SelectItem value="mid">Mid</SelectItem>
+                          <SelectItem value="senior">Senior</SelectItem>
+                          <SelectItem value="lead">Lead</SelectItem>
+                          <SelectItem value="executive">Executive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <JobPillSelector
-              key={selectedTemplateId}
-              sections={sections}
-              value={pills}
-              onChange={setPills}
-            />
+                <FormField
+                  control={form.control}
+                  name="salary_min"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Salary min *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            {requiredError ? <p className="text-sm text-destructive">{requiredError}</p> : null}
-            {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
-            {state.warning ? <p className="text-sm text-amber-700">{state.warning}</p> : null}
-            <p className="text-xs text-muted-foreground">
-              AI-generated drafts are assistive only. You can edit all fields before saving or publishing.
-            </p>
+                <FormField
+                  control={form.control}
+                  name="salary_max"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Salary max *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Generating..." : "Generate AI draft"}
-            </Button>
-          </form>
+                <FormField
+                  control={form.control}
+                  name="salary_currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="GBP" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="screening_threshold"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Screening threshold (0–100) *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <JobPillSelector
+                key={selectedTemplateId}
+                sections={sections}
+                value={pills}
+                onChange={setPills}
+              />
+
+              {requiredError ? <p className="text-sm text-destructive">{requiredError}</p> : null}
+              {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+              {state.warning ? <p className="text-sm text-amber-700">{state.warning}</p> : null}
+              <p className="text-xs text-muted-foreground">
+                AI-generated drafts are assistive only. You can edit all fields before saving or publishing.
+              </p>
+
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Generating..." : "Generate AI draft"}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 
@@ -230,7 +506,7 @@ export function JobPillBuilder({ companies, createAction, error }: JobPillBuilde
               key={JSON.stringify(generatedDraft)}
               companies={companies}
               action={createAction}
-              defaultValues={generatedDraft}
+              defaultValues={{ ...generatedDraft, company_id: selectedCompanyId }}
               submitLabel="Save draft"
               secondarySubmitLabel="Publish now"
               error={error}
