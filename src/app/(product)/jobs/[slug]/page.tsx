@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Building2Icon } from "lucide-react";
 import { getPublishedJobDetailBySlug } from "@/lib/jobs/published-queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PageCard } from "@/components/layout/page-card";
 import { ProductBreadcrumbs } from "@/components/layout/product-breadcrumbs";
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+} from "@/components/ui/item";
 import { getPublicEnv } from "@/lib/env";
 import { getListingLogoPublicUrl } from "@/lib/listing-logo";
 import { formatEmploymentType, formatRemoteType, formatSeniority } from "@/lib/format-job-listing";
@@ -161,7 +168,16 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
             <TypographyP className="text-base leading-relaxed">{job.summary}</TypographyP>
           ) : null}
           {hybridOfficeSentence ? (
-            <TypographyP className="text-base leading-relaxed">{hybridOfficeSentence}</TypographyP>
+            <Item variant="muted" className="items-start">
+              <ItemMedia variant="icon">
+                <Building2Icon className="text-muted-foreground" aria-hidden />
+              </ItemMedia>
+              <ItemContent className="gap-0">
+                <ItemDescription className="line-clamp-none text-base leading-relaxed text-foreground">
+                  {hybridOfficeSentence}
+                </ItemDescription>
+              </ItemContent>
+            </Item>
           ) : null}
 
           {responsibilities.length ? (

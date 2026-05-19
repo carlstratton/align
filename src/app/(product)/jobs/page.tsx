@@ -87,21 +87,24 @@ export default async function PublicJobsPage() {
               return (
                 <li key={job.id} className="flex flex-wrap items-center gap-6 py-8 lg:flex-nowrap lg:gap-8">
                   <div className="order-1 shrink-0">
-                    {logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={logoUrl}
-                        alt=""
-                        width={90}
-                        height={90}
-                        className="size-[90px] rounded-lg border border-border object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="size-[90px] rounded-lg bg-muted"
-                        aria-hidden
-                      />
-                    )}
+                    <Link
+                      href={`/jobs/${job.slug}`}
+                      className="inline-block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`View ${job.title}`}
+                    >
+                      {logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={logoUrl}
+                          alt=""
+                          width={90}
+                          height={90}
+                          className="size-[90px] rounded-lg border border-border object-cover"
+                        />
+                      ) : (
+                        <div className="size-[90px] rounded-lg bg-muted" aria-hidden />
+                      )}
+                    </Link>
                   </div>
 
                   <div className="order-3 min-w-0 flex-1 lg:order-2">
