@@ -10,15 +10,16 @@ export default function ProductLayout({ children }: { children: React.ReactNode 
           <Link
             href="/"
             className="inline-flex shrink-0 items-center self-center leading-none"
-            aria-label="Align.ai home"
+            aria-label="sprint.cv home"
           >
             <Image
-              src="/marketing/logo.svg"
-              alt="Align.ai"
-              width={60}
-              height={24}
+              src="/marketing/sprint-logo.png"
+              alt="sprint.cv"
+              width={120}
+              height={32}
               priority
-              className="block h-6 w-auto"
+              unoptimized
+              className="block h-8 w-auto"
             />
           </Link>
           <nav className="flex items-center gap-5 text-sm text-muted-foreground">

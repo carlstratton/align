@@ -17,11 +17,11 @@ export function FeatureCard({ title, description, iconSrc, className }: FeatureC
   return (
     <article
       className={cn(
-        "flex flex-col gap-9 rounded-[20px] border border-[#e5e5e5] bg-white px-6 py-10",
+        "flex flex-col items-start justify-center gap-9 rounded-[20px] border border-[#e5e5e5] bg-white p-6",
         className,
       )}
     >
-      <img src={iconSrc} alt="" className="size-20 shrink-0" />
+      <img src={iconSrc} alt="" className="size-20 shrink-0 rounded-[16px] bg-[#F9F9F9]" />
 
       <div className="flex flex-col gap-6">
         <h3 className="text-[28px] leading-[1.1] tracking-[-0.02em] text-black">{title}</h3>

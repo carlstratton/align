@@ -32,7 +32,7 @@ export function MarketingHome() {
         <div className="relative mx-auto w-full max-w-7xl px-6 pb-[120px] pt-20 lg:px-10 lg:pt-24">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex flex-col gap-3">
-              <p className="text-[16px] leading-[1.1] tracking-[-0.02em] text-[#174ea6]">
+              <p className="pl-[6px] text-[16px] leading-[1.1] tracking-[-0.02em] text-[#174ea6]">
                 Business impact
               </p>
               <h2
@@ -61,15 +61,15 @@ export function MarketingHome() {
 
         {/* Feature cards grid */}
         <div className="relative mx-auto w-full max-w-7xl px-6 lg:px-10">
-          <div className="flex flex-col gap-10 lg:gap-16">
+          <div className="flex flex-col gap-10">
             {/* Row 1: 2 equal columns */}
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-16">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-x-10">
               <FeatureCard {...consistency} />
               <FeatureCard {...clarity} />
             </div>
 
             {/* Row 2: 3 equal columns */}
-            <div className="grid gap-6 lg:grid-cols-3 lg:gap-16">
+            <div className="grid gap-6 lg:grid-cols-3 lg:gap-x-10">
               <FeatureCard {...control} />
               <FeatureCard {...speed} />
               <FeatureCard {...quality} />

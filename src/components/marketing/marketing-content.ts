@@ -13,8 +13,8 @@ export const marketingFeatures: FeatureCardContent[] = [
     id: "consistency",
     label: "Consistency",
     badgeIconSrc: "/marketing/badges/consistency.svg",
-    title: "Keep hiring moving",
-    description: "Coordinate interviews with less friction.",
+    title: "Review candidates at scale",
+    description: "Handle growing application volume without slowing down hiring.",
     iconSrc: "/marketing/icon-tune-hiring.svg",
   },
   {
@@ -23,7 +23,7 @@ export const marketingFeatures: FeatureCardContent[] = [
     badgeIconSrc: "/marketing/badges/clarity.svg",
     badgeIconSize: 13.2,
     title: "Faster scheduling flow",
-    description: "Keep candidates moving without bottlenecks.",
+    description: "Effortlessly move candidates from shortlist to interview.",
     iconSrc: "/marketing/icon-cv-contextualisation.svg",
   },
   {
@@ -31,9 +31,8 @@ export const marketingFeatures: FeatureCardContent[] = [
     label: "Speed",
     badgeIconSrc: "/marketing/badges/speed.svg",
     badgeIconSize: 16,
-    title: "Triage applications faster",
-    description:
-      "Create scoring profiles that match how your team hires, from must-have skills to weighting, thresholds, and review standards.",
+    title: "Built for small hiring teams",
+    description: "Spend less time reviewing applications and more time meeting people.",
     iconSrc: "/marketing/icon-triage.svg",
   },
   {
@@ -41,9 +40,8 @@ export const marketingFeatures: FeatureCardContent[] = [
     label: "Control",
     badgeIconSrc: "/marketing/badges/control.svg",
     badgeIconSize: 14.06,
-    title: "Review everything in one place",
-    description:
-      "Get score breakdowns, confidence levels, key insights, and the evaluation profile used for each candidate.",
+    title: "Hiring workflows that adapt",
+    description: "Fit into how your team hires, not the other way around.",
     iconSrc: "/marketing/icon-manage-roles.svg",
   },
   {
@@ -51,9 +49,8 @@ export const marketingFeatures: FeatureCardContent[] = [
     label: "Quality",
     badgeIconSrc: "/marketing/badges/quality.svg",
     badgeIconSize: 17,
-    title: "Review everything in one place",
-    description:
-      "Get score breakdowns, confidence levels, key insights, and the evaluation profile used for each candidate.",
+    title: "Better candidate decisions",
+    description: "Reduce guesswork across candidate review.",
     iconSrc: "/marketing/icon-job-specs.svg",
   },
 ];
