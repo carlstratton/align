@@ -6,7 +6,7 @@ export default function ProductLayout({ children }: { children: React.ReactNode 
   return (
     <>
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex h-12 w-full max-w-6xl items-center justify-between px-6">
           <Link
             href="/"
             className="inline-flex shrink-0 items-center self-center leading-none"

@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Align.ai",
+  title: "sprint.cv",
   description:
-    "Align.ai uses contextual AI reasoning to surface the strongest candidates, helping small teams move beyond keyword screening and hire with greater clarity and conviction.",
+    "Contextual AI reasoning that surfaces the strongest candidates, helping small teams move beyond keyword screening and hire with greater clarity and conviction.",
 };
 
 export default function RootLayout({

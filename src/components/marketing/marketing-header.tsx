@@ -12,19 +12,20 @@ export async function MarketingHeader() {
   const signedIn = hasPublicEnv() ? Boolean(await getOptionalAuthUser()) : false;
 
   return (
-    <header className="relative z-10 px-6 py-6 lg:px-10 motion-safe:animate-mkt-fade-in">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+    <header className="relative z-10 px-6 lg:px-10 motion-safe:animate-mkt-fade-in">
+      <div className="mx-auto flex h-12 w-full max-w-7xl items-center justify-between gap-4">
         <Link
           href="/"
           className="inline-flex shrink-0 items-center self-center leading-none"
-          aria-label="Align.ai home"
+          aria-label="sprint.cv home"
         >
           <Image
-            src="/marketing/logo.svg"
-            alt="Align.ai"
-            width={60}
-            height={24}
+            src="/marketing/sprint-logo.png"
+            alt="sprint.cv"
+            width={120}
+            height={32}
             priority
+            unoptimized
             className="block h-8 w-auto"
           />
         </Link>

@@ -13,30 +13,18 @@ export const marketingFeatures: FeatureCardContent[] = [
     id: "consistency",
     label: "Consistency",
     badgeIconSrc: "/marketing/badges/consistency.svg",
-    title: "Tune your hiring criteria",
-    description:
-      "Create scoring profiles that match how your team hires, from must-have skills to weighting, thresholds, and review standards.",
-    iconSrc: "/marketing/tune-your-hiring-criteria.svg",
+    title: "Keep hiring moving",
+    description: "Coordinate interviews with less friction.",
+    iconSrc: "/marketing/icon-tune-hiring.svg",
   },
   {
     id: "clarity",
     label: "Clarity",
     badgeIconSrc: "/marketing/badges/clarity.svg",
     badgeIconSize: 13.2,
-    title: "Review everything in one place",
-    description:
-      "Get score breakdowns, confidence levels, key insights, and the evaluation profile used for each candidate.",
-    iconSrc: "/marketing/review-everything-in-one-place.svg",
-  },
-  {
-    id: "control",
-    label: "Control",
-    badgeIconSrc: "/marketing/badges/control.svg",
-    badgeIconSize: 14.06,
-    title: "Manage roles from start to finish",
-    description:
-      "Create, edit, publish, close, and reopen jobs without losing track of your hiring pipeline.",
-    iconSrc: "/marketing/manage-roles-from-start-to-finish.svg",
+    title: "Faster scheduling flow",
+    description: "Keep candidates moving without bottlenecks.",
+    iconSrc: "/marketing/icon-cv-contextualisation.svg",
   },
   {
     id: "speed",
@@ -45,17 +33,27 @@ export const marketingFeatures: FeatureCardContent[] = [
     badgeIconSize: 16,
     title: "Triage applications faster",
     description:
-      "See every candidate by role, status, and score, with quick actions to pass, review, or reject.",
-    iconSrc: "/marketing/triage-applications-faster.svg",
+      "Create scoring profiles that match how your team hires, from must-have skills to weighting, thresholds, and review standards.",
+    iconSrc: "/marketing/icon-triage.svg",
+  },
+  {
+    id: "control",
+    label: "Control",
+    badgeIconSrc: "/marketing/badges/control.svg",
+    badgeIconSize: 14.06,
+    title: "Review everything in one place",
+    description:
+      "Get score breakdowns, confidence levels, key insights, and the evaluation profile used for each candidate.",
+    iconSrc: "/marketing/icon-manage-roles.svg",
   },
   {
     id: "quality",
     label: "Quality",
     badgeIconSrc: "/marketing/badges/quality.svg",
     badgeIconSize: 17,
-    title: "Write better job specs, faster",
+    title: "Review everything in one place",
     description:
-      "Use a structured role builder and AI drafting support to create clearer, more consistent job descriptions.",
-    iconSrc: "/marketing/quality.svg",
+      "Get score breakdowns, confidence levels, key insights, and the evaluation profile used for each candidate.",
+    iconSrc: "/marketing/icon-job-specs.svg",
   },
 ];
