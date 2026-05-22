@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isAdminEmail } from "@/lib/auth-admin";
 import { createClient } from "@/lib/supabase/server";
 
 function getString(formData: FormData, key: string) {
@@ -29,8 +30,6 @@ export async function loginAction(formData: FormData) {
   redirect("/dashboard");
 }
 
-const ADMIN_EMAIL = "cgstratton+align@gmail.com";
-
 export async function signupAction(formData: FormData) {
   const fullName = getString(formData, "full_name");
   const email = getString(formData, "email");
@@ -38,7 +37,7 @@ export async function signupAction(formData: FormData) {
   const supabase = await createClient();
 
   const { data: { user: caller } } = await supabase.auth.getUser();
-  if (!caller || caller.email !== ADMIN_EMAIL) {
+  if (!caller || !isAdminEmail(caller.email)) {
     redirect("/auth/login");
   }
 

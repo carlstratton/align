@@ -3,6 +3,7 @@ import { PageCard } from "@/components/layout/page-card";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { TypographyP } from "@/components/ui/typography";
+import { isAdminEmail } from "@/lib/auth-admin";
 import { hasPublicEnv } from "@/lib/env";
 
 export default async function DashboardPage() {
@@ -19,6 +20,8 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const isAdmin = isAdminEmail(user?.email);
 
   return (
     <PageCard
@@ -37,6 +40,11 @@ export default async function DashboardPage() {
           <Button asChild variant="outline">
             <Link href="/dashboard/scoring-profiles">Tune scoring profiles</Link>
           </Button>
+          {isAdmin ? (
+            <Button asChild variant="outline">
+              <Link href="/auth/signup">Add user</Link>
+            </Button>
+          ) : null}
         </div>
       </div>
     </PageCard>
