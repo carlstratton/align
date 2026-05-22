@@ -1,14 +1,25 @@
+import { redirect } from "next/navigation";
 import { PageCard } from "@/components/layout/page-card";
 import { signupAction } from "@/app/(product)/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/server";
+
+const ADMIN_EMAIL = "cgstratton+align@gmail.com";
 
 type SignupPageProps = {
   searchParams: Promise<{ error?: string }>;
 };
 
 export default async function SignupPage({ searchParams }: SignupPageProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user || user.email !== ADMIN_EMAIL) {
+    redirect("/auth/login");
+  }
+
   const params = await searchParams;
 
   return (

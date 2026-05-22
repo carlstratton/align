@@ -77,17 +77,6 @@ export function MobileNav({ signedIn, className }: MobileNavProps) {
             className="mt-3 flex flex-col gap-3"
             linkClassName="text-base text-slate-900"
           />
-          {!signedIn ? (
-            <Link
-              href="/auth/signup"
-              className={cn(
-                "mt-4 inline-flex w-full items-center justify-center rounded-full bg-black px-4 py-2 text-sm font-medium text-white",
-              )}
-              onClick={() => setOpen(false)}
-            >
-              Start free trial
-            </Link>
-          ) : null}
         </div>
       ) : null}
     </div>

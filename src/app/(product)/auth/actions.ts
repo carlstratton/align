@@ -29,11 +29,18 @@ export async function loginAction(formData: FormData) {
   redirect("/dashboard");
 }
 
+const ADMIN_EMAIL = "cgstratton+align@gmail.com";
+
 export async function signupAction(formData: FormData) {
   const fullName = getString(formData, "full_name");
   const email = getString(formData, "email");
   const password = getString(formData, "password");
   const supabase = await createClient();
+
+  const { data: { user: caller } } = await supabase.auth.getUser();
+  if (!caller || caller.email !== ADMIN_EMAIL) {
+    redirect("/auth/login");
+  }
 
   const { data, error } = await supabase.auth.signUp({
     email,

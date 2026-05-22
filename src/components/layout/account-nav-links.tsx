@@ -18,9 +18,6 @@ export function AccountNavLinks({ className, linkClassName, signedIn }: AccountN
         <Link href="/auth/login" className={linkClass}>
           Log in
         </Link>
-        <Link href="/auth/signup" className={linkClass}>
-          Sign up
-        </Link>
       </div>
     );
   }

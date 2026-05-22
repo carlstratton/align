@@ -39,8 +39,8 @@ export function MarketingHero() {
             </p>
           </div>
 
-          <Link
-            href="/auth/signup"
+          <a
+            href="mailto:cgstratton+align@gmail.com?subject=Request%20Demo"
             className={cn(
               gtAmerica.className,
               "inline-flex w-fit min-h-[52px] items-center justify-center rounded-full bg-[#174EA6] px-8 text-[clamp(1rem,2vw,1.375rem)] font-medium leading-none tracking-[-0.02em] text-white transition hover:bg-[#1a5bc4] sm:min-h-[56px] sm:px-9",
@@ -48,7 +48,7 @@ export function MarketingHero() {
             )}
           >
             <span className="whitespace-nowrap">Request Demo</span>
-          </Link>
+          </a>
         </div>
       </div>
     </section>
