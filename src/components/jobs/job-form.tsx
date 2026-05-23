@@ -479,9 +479,6 @@ export function JobForm({
       </label>
 
       <div className="mt-6 flex gap-3">
-        <Button type="submit" name="intent" value="save" className="gap-1" size="lg" variant="outline">
-          {submitLabel}
-        </Button>
         {secondarySubmitLabel ? (
           <Button
             type="submit"
@@ -500,6 +497,9 @@ export function JobForm({
             {secondarySubmitLabel}
           </Button>
         ) : null}
+        <Button type="submit" name="intent" value="save" className="gap-1" size="lg" variant="outline">
+          {submitLabel}
+        </Button>
       </div>
     </form>
   );
