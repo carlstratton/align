@@ -109,6 +109,7 @@ export function JobPillBuilder({ companies: initialCompanies, createAction, erro
   const sections = activeTemplate.sections;
 
   const [pills, setPills] = useState<PillSelections>(emptyPillSelections());
+  const [hideCompanyIdentity, setHideCompanyIdentity] = useState(false);
   const [state, formAction, isPending] = useActionState(generateJobDraftAction, defaultState);
   const [requiredError, setRequiredError] = useState<string | null>(null);
 
@@ -215,6 +216,20 @@ export function JobPillBuilder({ companies: initialCompanies, createAction, erro
                   </Button>
                 </div>
               </div>
+
+              {/* Confidential toggle */}
+              <label className="flex items-center gap-3 rounded-md border border-border p-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={hideCompanyIdentity}
+                  onChange={(e) => setHideCompanyIdentity(e.target.checked)}
+                  className="size-4 rounded"
+                />
+                <span>
+                  <span className="font-medium">Keep company identity confidential</span>
+                  <span className="ml-1 text-muted-foreground">— company name and logo won't be shown on the public listing.</span>
+                </span>
+              </label>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
@@ -506,10 +521,11 @@ export function JobPillBuilder({ companies: initialCompanies, createAction, erro
               key={JSON.stringify(generatedDraft)}
               companies={companies}
               action={createAction}
-              defaultValues={{ ...generatedDraft, company_id: selectedCompanyId }}
+              defaultValues={{ ...generatedDraft, company_id: selectedCompanyId, hide_company_identity: hideCompanyIdentity }}
               submitLabel="Save draft"
               secondarySubmitLabel="Publish now"
               error={error}
+              showConfidentialToggle={false}
             />
           </CardContent>
         </Card>

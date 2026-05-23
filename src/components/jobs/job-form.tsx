@@ -39,6 +39,8 @@ type JobFormProps = {
   submitLabel: string;
   secondarySubmitLabel?: string;
   error?: string;
+  /** When false, the confidential toggle is rendered as a hidden input (value already chosen upstream). */
+  showConfidentialToggle?: boolean;
 };
 
 function normalizeMultilineValue(value: unknown): string[] {
@@ -66,6 +68,7 @@ export function JobForm({
   submitLabel,
   secondarySubmitLabel,
   error,
+  showConfidentialToggle = true,
 }: JobFormProps) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const [hasStagedLogo, setHasStagedLogo] = useState(false);
@@ -129,17 +132,25 @@ export function JobForm({
       {error ? <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       <p className="text-xs text-muted-foreground">Fields marked with * are mandatory.</p>
 
-      <label className="flex items-center gap-3 rounded-md border border-border p-3 text-sm">
+      {showConfidentialToggle ? (
+        <label className="flex items-center gap-3 rounded-md border border-border p-3 text-sm">
+          <input
+            type="checkbox"
+            {...form.register("hide_company_identity")}
+            className="size-4 rounded"
+          />
+          <span>
+            <span className="font-medium">Keep company identity confidential</span>
+            <span className="ml-1 text-muted-foreground">— company name and logo will not be shown on the public listing.</span>
+          </span>
+        </label>
+      ) : (
         <input
-          type="checkbox"
-          {...form.register("hide_company_identity")}
-          className="size-4 rounded"
+          type="hidden"
+          name="hide_company_identity"
+          value={hideCompanyIdentity ? "on" : ""}
         />
-        <span>
-          <span className="font-medium">Keep company identity confidential</span>
-          <span className="ml-1 text-muted-foreground">— company name and logo will not be shown on the public listing.</span>
-        </span>
-      </label>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="grid gap-1.5">
