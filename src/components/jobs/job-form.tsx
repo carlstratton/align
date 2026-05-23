@@ -478,8 +478,8 @@ export function JobForm({
         ) : null}
       </label>
 
-      <div className="flex gap-3">
-        <Button type="submit" name="intent" value="save" className="gap-1" size="default">
+      <div className="mt-6 flex gap-3">
+        <Button type="submit" name="intent" value="save" className="gap-1" size="lg" variant="outline">
           {submitLabel}
         </Button>
         {secondarySubmitLabel ? (
@@ -487,9 +487,9 @@ export function JobForm({
             type="submit"
             name="intent"
             value="publish"
-            variant="secondary"
+            variant="default"
             className="gap-1"
-            size="default"
+            size="lg"
             disabled={!canPublish}
             title={
               canPublish
