@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useMemo, startTransition, useState } from "react";
+import { useActionState, useCallback, useEffect, useMemo, startTransition, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { PencilIcon, PlusIcon, Loader2Icon } from "lucide-react";
 
 import { JobForm, type CompanyOption } from "@/components/jobs/job-form";
 import { JobPillSelector } from "@/components/jobs/job-pill-selector";
@@ -112,6 +112,15 @@ export function JobPillBuilder({ companies: initialCompanies, createAction, erro
   const [hideCompanyIdentity, setHideCompanyIdentity] = useState(false);
   const [state, formAction, isPending] = useActionState(generateJobDraftAction, defaultState);
   const [requiredError, setRequiredError] = useState<string | null>(null);
+  const step2Ref = useRef<HTMLDivElement>(null);
+
+  const generatedDraft = state.ok ? state.draft : null;
+
+  useEffect(() => {
+    if (generatedDraft) {
+      step2Ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [generatedDraft]);
 
   const form = useForm<JobPillBasicsFormValues>({
     resolver: zodResolver(jobPillBasicsFormSchema),
@@ -136,8 +145,6 @@ export function JobPillBuilder({ companies: initialCompanies, createAction, erro
         .map((section) => section.label),
     [pills, sections],
   );
-
-  const generatedDraft = state.ok ? state.draft : null;
 
   function onSubmit(values: JobPillBasicsFormValues) {
     if (missingRequiredSections.length > 0) {
@@ -504,15 +511,37 @@ export function JobPillBuilder({ companies: initialCompanies, createAction, erro
               </p>
 
               <Button type="submit" disabled={isPending}>
-                {isPending ? "Generating..." : "Generate AI draft"}
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2Icon className="size-4 animate-spin" />
+                    Generating draft…
+                  </span>
+                ) : "Generate AI draft"}
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
 
-      {generatedDraft ? (
-        <Card>
+      {isPending ? (
+        <Card ref={step2Ref} className="animate-pulse">
+          <CardHeader>
+            <CardTitle className="text-muted-foreground">2) Edit generated draft and publish</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Loader2Icon className="size-4 animate-spin shrink-0" />
+              <span>Claude is writing your job draft — this takes around 20 seconds…</span>
+            </div>
+            <div className="space-y-3">
+              {[120, 80, 100, 60, 90].map((w, i) => (
+                <div key={i} className="h-4 rounded bg-muted" style={{ width: `${w}%` }} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : generatedDraft ? (
+        <Card ref={step2Ref}>
           <CardHeader>
             <CardTitle>2) Edit generated draft and publish</CardTitle>
           </CardHeader>
