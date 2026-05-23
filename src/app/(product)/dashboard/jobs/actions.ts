@@ -297,7 +297,7 @@ export async function createJobAction(formData: FormData) {
 
   revalidatePath("/dashboard/jobs");
   revalidatePath("/jobs");
-  redirect(`/dashboard/jobs/${data.id}`);
+  redirect(`/dashboard/jobs/${data.id}${status === "published" ? "?published=true" : ""}`);
 }
 
 export async function updateJobAction(formData: FormData) {
@@ -434,5 +434,5 @@ export async function setJobStatusAction(formData: FormData) {
   revalidatePath("/dashboard/jobs");
   revalidatePath(`/dashboard/jobs/${jobId}`);
   revalidatePath("/jobs");
-  redirect(`/dashboard/jobs/${jobId}`);
+  redirect(`/dashboard/jobs/${jobId}${status === "published" ? "?published=true" : ""}`);
 }

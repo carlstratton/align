@@ -5,10 +5,11 @@ import { setJobStatusAction } from "@/app/(product)/dashboard/jobs/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TypographyP } from "@/components/ui/typography";
+import { JobPublishedDialog } from "@/components/jobs/job-published-dialog";
 
 type JobDetailPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; published?: string }>;
 };
 
 export default async function JobDetailPage({ params, searchParams }: JobDetailPageProps) {
@@ -18,7 +19,7 @@ export default async function JobDetailPage({ params, searchParams }: JobDetailP
   const { data: job } = await supabase
     .from("jobs")
     .select(
-      "id, title, status, role_category, summary, screening_threshold, updated_at, published_at, closed_at",
+      "id, title, slug, status, role_category, summary, screening_threshold, updated_at, published_at, closed_at",
     )
     .eq("id", id)
     .single();
@@ -29,6 +30,9 @@ export default async function JobDetailPage({ params, searchParams }: JobDetailP
 
   return (
     <PageCard title={job.title} description="">
+      {query.published === "true" && job.slug ? (
+        <JobPublishedDialog jobTitle={job.title} jobSlug={job.slug} />
+      ) : null}
       {query.error ? (
         <p className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {query.error}
