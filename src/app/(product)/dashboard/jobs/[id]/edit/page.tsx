@@ -21,7 +21,7 @@ export default async function EditJobPage({ params, searchParams }: EditJobPageP
     supabase
       .from("jobs")
       .select(
-        "id, company_id, title, role_category, location_country, location_city, remote_type, hybrid_office_days_per_week, employment_type, seniority, salary_min, salary_max, salary_currency, summary, responsibilities, requirements, nice_to_haves, benefits, skills, screening_threshold, logo_storage_path",
+        "id, company_id, title, role_category, location_country, location_city, remote_type, hybrid_office_days_per_week, employment_type, seniority, salary_min, salary_max, salary_currency, summary, responsibilities, requirements, nice_to_haves, benefits, skills, screening_threshold, logo_storage_path, hide_company_identity",
       )
       .eq("id", id)
       .single(),

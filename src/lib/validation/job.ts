@@ -37,6 +37,7 @@ export const jobDraftSchema = z.object({
     .min(0, "Screening threshold must be between 0 and 100")
     .max(100, "Screening threshold must be between 0 and 100")
     .default(70),
+  hide_company_identity: z.boolean().default(false),
 }).refine((data) => data.salary_max >= data.salary_min, {
   message: "Maximum salary must be greater than or equal to minimum salary",
   path: ["salary_max"],

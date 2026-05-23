@@ -48,6 +48,7 @@ function buildJobFormData(formData: FormData) {
     benefits: fromMultiline(getString(formData, "benefits")),
     skills: fromMultiline(getString(formData, "skills")),
     screening_threshold: getNumber(formData, "screening_threshold", 70),
+    hide_company_identity: formData.get("hide_company_identity") === "on",
   };
 }
 
@@ -269,7 +270,7 @@ export async function createJobAction(formData: FormData) {
     logoPath = path;
   }
 
-  const hasListingImage = Boolean(logoPath || companyRow.logo_storage_path);
+  const hasListingImage = Boolean(logoPath || companyRow.logo_storage_path || parsed.data.hide_company_identity);
   if (status === "published" && !hasListingImage) {
     redirect(
       `/dashboard/jobs/new?error=${encodeURIComponent(
@@ -392,7 +393,7 @@ export async function setJobStatusAction(formData: FormData) {
 
   const { data: jobRow, error: jobFetchError } = await supabase
     .from("jobs")
-    .select("logo_storage_path, company_id, recruiter_id")
+    .select("logo_storage_path, company_id, recruiter_id, hide_company_identity")
     .eq("id", jobId)
     .maybeSingle();
 
@@ -406,7 +407,7 @@ export async function setJobStatusAction(formData: FormData) {
       .select("logo_storage_path")
       .eq("id", jobRow.company_id)
       .maybeSingle();
-    const hasListingImage = Boolean(jobRow.logo_storage_path || companyRow?.logo_storage_path);
+    const hasListingImage = Boolean(jobRow.logo_storage_path || companyRow?.logo_storage_path || jobRow.hide_company_identity);
     if (!hasListingImage) {
       redirect(
         `/dashboard/jobs/${jobId}?error=${encodeURIComponent(

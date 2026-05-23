@@ -22,6 +22,7 @@ type PublicJobListItem = {
   logo_storage_path: string | null;
   created_at: string;
   published_at: string | null;
+  hide_company_identity: boolean;
   companies: { name: string; logo_storage_path: string | null } | null;
 };
 
@@ -75,11 +76,13 @@ export default async function PublicJobsPage() {
                 .filter(Boolean)
                 .join(" • ");
 
-              const logoUrl = getListingLogoPublicUrl(
-                NEXT_PUBLIC_SUPABASE_URL,
-                job.logo_storage_path,
-                job.companies?.logo_storage_path ?? null,
-              );
+              const logoUrl = job.hide_company_identity
+                ? "/marketing/icon-confidential-company.svg"
+                : getListingLogoPublicUrl(
+                    NEXT_PUBLIC_SUPABASE_URL,
+                    job.logo_storage_path,
+                    job.companies?.logo_storage_path ?? null,
+                  );
 
               const badgeClass =
                 "h-auto rounded-md border border-black px-2 py-0.5 text-[12px] font-medium leading-4 text-black";
@@ -110,7 +113,7 @@ export default async function PublicJobsPage() {
                   <div className="order-3 min-w-0 flex-1 lg:order-2">
                     <h2 className="text-[26px] font-medium leading-none text-black">{job.title}</h2>
                     <p className="mt-2 text-[18px] font-medium leading-[23px] text-muted-foreground">
-                      {companyName} • {city}, {country}
+                      {job.hide_company_identity ? null : `${companyName} • `}{city}, {country}
                       {salaryLabel ? ` • ${salaryLabel}` : ""}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">

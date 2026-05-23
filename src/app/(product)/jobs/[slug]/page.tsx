@@ -55,12 +55,15 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
     job.companies && typeof job.companies === "object"
       ? (job.companies as { name?: string; logo_storage_path?: string | null })
       : null;
-  const companyName = companyRecord?.name ? String(companyRecord.name) : "Company";
-  const logoUrl = getListingLogoPublicUrl(
-    NEXT_PUBLIC_SUPABASE_URL,
-    (job as unknown as { logo_storage_path?: string | null }).logo_storage_path ?? null,
-    companyRecord?.logo_storage_path ?? null,
-  );
+  const hideCompanyIdentity = Boolean((job as unknown as { hide_company_identity?: boolean }).hide_company_identity);
+  const companyName = !hideCompanyIdentity && companyRecord?.name ? String(companyRecord.name) : null;
+  const logoUrl = hideCompanyIdentity
+    ? "/marketing/icon-confidential-company.svg"
+    : getListingLogoPublicUrl(
+        NEXT_PUBLIC_SUPABASE_URL,
+        (job as unknown as { logo_storage_path?: string | null }).logo_storage_path ?? null,
+        companyRecord?.logo_storage_path ?? null,
+      );
 
   const salaryLabel =
     job.salary_min && job.salary_max
@@ -132,10 +135,8 @@ export default async function PublicJobPage({ params }: PublicJobPageProps) {
             <div className="flex min-w-0 flex-col gap-2">
             <TypographyH1>{job.title}</TypographyH1>
             <TypographyP className="!mt-0 text-base text-muted-foreground">
-              {companyName}
-              {job.location_city || job.location_country
-                ? ` · ${[job.location_city, job.location_country].filter(Boolean).join(", ")}`
-                : null}
+              {companyName ? `${companyName} · ` : null}
+              {[job.location_city, job.location_country].filter(Boolean).join(", ")}
             </TypographyP>
             <div className="mt-1 flex flex-wrap gap-2">
               {job.employment_type ? (

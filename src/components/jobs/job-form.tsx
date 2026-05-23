@@ -92,6 +92,7 @@ export function JobForm({
       benefits: defaultValues?.benefits ?? [],
       skills: defaultValues?.skills ?? [],
       screening_threshold: defaultValues?.screening_threshold ?? 70,
+      hide_company_identity: defaultValues?.hide_company_identity ?? false,
     },
   });
   const {
@@ -100,13 +101,14 @@ export function JobForm({
 
   const remoteType = useWatch({ control: form.control, name: "remote_type" });
   const companyId = useWatch({ control: form.control, name: "company_id" });
+  const hideCompanyIdentity = useWatch({ control: form.control, name: "hide_company_identity" });
 
   const selectedCompany = companies.find((c) => c.id === companyId);
   const companyBadgePath = selectedCompany?.logo_storage_path ?? null;
 
   const logoPublicUrl = getJobLogoPublicUrl(supabaseUrl, existingLogoPath ?? null);
   const companyBadgePublicUrl = getCompanyLogoPublicUrl(supabaseUrl, companyBadgePath);
-  const canPublish = Boolean(existingLogoPath || hasStagedLogo || companyBadgePath);
+  const canPublish = hideCompanyIdentity || Boolean(existingLogoPath || hasStagedLogo || companyBadgePath);
 
   useEffect(() => {
     if (remoteType !== "hybrid") {
@@ -126,6 +128,19 @@ export function JobForm({
       {defaultValues?.id ? <input type="hidden" name="job_id" value={defaultValues.id} /> : null}
       {error ? <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       <p className="text-xs text-muted-foreground">Fields marked with * are mandatory.</p>
+
+      <label className="flex items-center gap-3 rounded-md border border-border p-3 text-sm">
+        <input
+          type="checkbox"
+          {...form.register("hide_company_identity")}
+          className="size-4 rounded"
+        />
+        <span>
+          <span className="font-medium">Keep company identity confidential</span>
+          <span className="ml-1 text-muted-foreground">— company name and logo will not be shown on the public listing.</span>
+        </span>
+      </label>
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="grid gap-1.5">
           <Label>Company *</Label>
@@ -155,40 +170,48 @@ export function JobForm({
           <Label className="mb-1" htmlFor="company_logo">
             Listing logo{secondarySubmitLabel ? " (optional if company has a badge)" : ""}
           </Label>
-          {logoPublicUrl ? (
-            <div className="mt-2 mb-2 flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={logoPublicUrl}
-                alt=""
-                className="size-16 shrink-0 rounded-md border border-border object-cover"
+          {!hideCompanyIdentity ? (
+            <>
+              {logoPublicUrl ? (
+                <div className="mt-2 mb-2 flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={logoPublicUrl}
+                    alt=""
+                    className="size-16 shrink-0 rounded-md border border-border object-cover"
+                  />
+                  <span className="text-xs text-muted-foreground">Listing-specific logo on file</span>
+                </div>
+              ) : companyBadgePublicUrl ? (
+                <div className="mt-2 mb-2 flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={companyBadgePublicUrl}
+                    alt=""
+                    className="size-16 shrink-0 rounded-md border border-border object-cover"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Using company badge for listings (add a file above to override for this job only).
+                  </span>
+                </div>
+              ) : null}
+              <Input
+                id="company_logo"
+                name="company_logo"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="mt-1 max-w-md cursor-pointer"
+                onChange={(e) => setHasStagedLogo(Boolean(e.target.files?.length))}
               />
-              <span className="text-xs text-muted-foreground">Listing-specific logo on file</span>
-            </div>
-          ) : companyBadgePublicUrl ? (
-            <div className="mt-2 mb-2 flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={companyBadgePublicUrl}
-                alt=""
-                className="size-16 shrink-0 rounded-md border border-border object-cover"
-              />
-              <span className="text-xs text-muted-foreground">
-                Using company badge for listings (add a file above to override for this job only).
-              </span>
-            </div>
-          ) : null}
-          <Input
-            id="company_logo"
-            name="company_logo"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="mt-1 max-w-md cursor-pointer"
-            onChange={(e) => setHasStagedLogo(Boolean(e.target.files?.length))}
-          />
-          <p className="mt-1 text-xs text-muted-foreground">
-            PNG, JPEG, or WebP. Max 2MB. Shown on public job listings.
-          </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                PNG, JPEG, or WebP. Max 2MB. Shown on public job listings.
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Logo upload is hidden — a confidential placeholder will be shown on the listing.
+            </p>
+          )}
         </div>
         <label className="text-sm">
           <Label className="mb-1">Title *</Label>
